@@ -189,3 +189,15 @@ per scena: il grafo che gli dai è il tetto della loro interattività, non il pa
 → **Prossima volta**: nel brief chiedere ESPLICITAMENTE un minimo di 2 scelte per scena (di cui
 almeno una con conseguenza meccanica) e una prova di dado ogni tre scene, e mettere le soglie di
 densità nel testo dell'incarico.
+
+**36. L'ordine di disegno è un bug invisibile ai test.**
+Nel Capovolto dell'Effetto Zoom le geometrie e le linee di fuga erano disegnate PRIMA del suolo:
+finivano coperte, e la scena madre dell'atto sembrava un blob viola vuoto. Stessa famiglia: un
+`ground()` che copriva 60px invece di tutto il canvas lasciava un buco dietro la ringhiera in
+quattro ambientazioni, e un riempimento di piastrelle con un gap da 1px faceva trapelare lo
+sfondo della scena PRECEDENTE. Nessun test automatico vede niente di tutto questo.
+→ **Regola**: nell'audit visivo controllare esplicitamente, oltre alle classi note (elementi
+fluttuanti, bande nette, aloni squadrati), anche **l'ordine di disegno** (ciò che sta dietro va
+disegnato prima) e la **copertura totale del canvas** (nessun pixel non dipinto: il canvas non
+viene ripulito tra le scene, quindi un buco mostra la scena precedente). E fare l'audit a TUTTI
+i livelli degli effetti dinamici (qui: trip 0 / 0.5 / 1): certi difetti si vedono solo a metà.
