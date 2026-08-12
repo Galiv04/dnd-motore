@@ -1,0 +1,182 @@
+<!--
+  SCHELETRO index.html del motore condiviso (Galiv04/dnd-motore).
+  Questo file NON è un gioco: è la base da cui `tools/nuovo-gioco.sh` genera l'index.html
+  di un gioco nuovo. Punti da personalizzare per ogni gioco:
+
+    1. <title> — titolo della scheda del browser
+    2. <meta name="description"> — descrizione SEO/social del gioco
+    3. <link rel="icon"> — favicon (emoji SVG inline, come qui)
+    4. .game-title (h1) — titolo grande nella schermata iniziale
+    5. .game-subtitle — sottotitolo (numero giocatori, tono, avvertenze)
+    6. .title-footer — riga in fondo alla schermata iniziale
+    7. Testi dei pulsanti: "Nuova Partita", "La Storia", "Come si Gioca", ecc.
+    8. .setup-hint — testo di spiegazione nella schermata di setup del gruppo
+    9. Eventuale HUD della valuta nell'header di gioco (questo scheletro non ne ha uno:
+       vedi l'Effetto Zoom per un esempio di barra Fattanza da aggiungere in .header-left)
+    10. js/campaign.js, js/characters.js, js/epilogues.js — SPECIFICI del gioco, NON
+        vengono dal motore: li scrive l'orchestratore di produzione (vedi templates/BRIEF.md)
+
+  Gli `id` degli elementi sono il CONTRATTO con engine.js/main.js/combat.js: non rimuoverli
+  né rinominarli, anche quando personalizzi i testi.
+-->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><!-- TITOLO DEL GIOCO --></title>
+<meta name="description" content="<!-- descrizione breve del gioco: tono, numero di giocatori, premessa -->">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❔</text></svg>">
+</head>
+<body>
+
+<!-- ===== SCHERMATA TITOLO ===== -->
+<div id="screen-title" class="screen active">
+  <div class="title-wrap">
+    <canvas id="title-canvas" width="480" height="270"></canvas>
+    <h1 class="game-title">TITOLO<br>SOTTOTITOLO</h1>
+    <p class="game-subtitle">Un'avventura interattiva in stile D&amp;D · N giocatori · Narratore automatico</p>
+    <div class="title-buttons">
+      <button class="btn btn-big" id="btn-new-game">▶ Nuova Partita</button>
+      <button class="btn btn-big btn-secondary" id="btn-continue" style="display:none">▶ Continua Partita</button>
+      <button class="btn btn-big btn-secondary" id="btn-revive" style="display:none">🗝 Ricomincia da un Capitolo</button>
+      <button class="btn btn-big btn-secondary" id="btn-story">📖 La Storia</button>
+      <button class="btn btn-big btn-secondary" id="btn-howto">📖 Come si Gioca</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-small" id="btn-profile" title="Cambia utente" aria-label="Gestisci gli utenti e i salvataggi">👤 …</button>
+      <button class="btn btn-small" id="btn-sound-title" title="Effetti sonori" aria-label="Attiva o disattiva gli effetti sonori">🔊 Effetti</button>
+      <button class="btn btn-small" id="btn-music-title" title="Musica" aria-label="Attiva o disattiva la musica">🎵 Musica</button>
+    </div>
+    <p class="title-footer"><!-- riga di chiusura: dedica, avvertenze contenuti, ecc. --></p>
+  </div>
+</div>
+
+<!-- ===== LA STORIA ===== -->
+<div id="screen-story" class="screen">
+  <div class="panel panel-scroll">
+    <h2>📖 La Storia</h2>
+    <div id="story-content"></div>
+    <button class="btn" id="btn-story-back">← Indietro</button>
+  </div>
+</div>
+
+<!-- ===== COME SI GIOCA ===== -->
+<div id="screen-howto" class="screen">
+  <div class="panel panel-scroll">
+    <h2>📖 Come si Gioca</h2>
+    <div id="howto-content"></div>
+    <button class="btn" id="btn-howto-back">← Indietro</button>
+  </div>
+</div>
+
+<!-- ===== SETUP PARTITA ===== -->
+<div id="screen-setup" class="screen">
+  <div class="panel panel-scroll">
+    <h2>🎭 Chi gioca stasera?</h2>
+    <p class="setup-hint"><!-- spiegazione del setup: chi si può scegliere, come funzionano i personaggi non giocati --></p>
+    <div id="char-grid" class="char-grid"></div>
+    <div class="setup-bar" style="margin-bottom:10px">
+      <span style="font-family:var(--font-pixel);font-size:11px;color:var(--text-dim)">Difficoltà:</span>
+      <button class="btn btn-small btn-gold" id="btn-diff-normale">⚖ Normale</button>
+      <button class="btn btn-small" id="btn-diff-facile">🌤 Tranquilla (nemici più deboli)</button>
+      <button class="btn btn-small" id="btn-diff-incubo">🌑 Incubo (nessuno sconto)</button>
+    </div>
+    <div class="setup-bar">
+      <span id="setup-count">Presenti: 0 / N</span>
+      <button class="btn btn-big" id="btn-start-adventure" disabled>Si comincia →</button>
+      <button class="btn btn-secondary" id="btn-setup-back">← Indietro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETTAGLIO PERSONAGGIO (modale) ===== -->
+<div id="modal-char" class="modal hidden">
+  <div class="modal-box panel-scroll" id="modal-char-content"></div>
+</div>
+
+<!-- ===== SCHERMATA DI GIOCO ===== -->
+<div id="screen-game" class="screen">
+  <div class="game-layout">
+
+    <header class="game-header">
+      <div class="header-left">
+        <span id="hud-location" class="hud-location">📍 —</span>
+        <!-- Eventuale HUD di una valuta speciale (es. barra Fattanza dell'Effetto Zoom)
+             va aggiunto qui, con id dedicati letti da un tripLevel()-like in engine.js -->
+      </div>
+      <div class="header-right">
+        <button class="btn btn-small" id="btn-map">🗺 Mappa</button>
+        <button class="btn btn-small" id="btn-party">🎭 Eroi</button>
+        <button class="btn btn-small" id="btn-inventory">🎒 Zaino</button>
+        <button class="btn btn-small" id="btn-rules">📖 Regole</button>
+        <button class="btn btn-small" id="btn-sound" title="Effetti sonori" aria-label="Attiva o disattiva gli effetti sonori">🔊</button>
+        <button class="btn btn-small" id="btn-music" title="Musica" aria-label="Attiva o disattiva la musica">🎵</button>
+        <button class="btn btn-small" id="btn-textsize" title="Testo grande" aria-label="Ingrandisci il testo">A±</button>
+        <button class="btn btn-small" id="btn-fullscreen" title="Schermo intero" aria-label="Schermo intero">⛶</button>
+        <button class="btn btn-small" id="btn-menu">☰</button>
+      </div>
+    </header>
+
+    <div class="scene-wrap">
+      <canvas id="scene-canvas" width="960" height="360"></canvas>
+      <div id="scene-caption" class="scene-caption"></div>
+    </div>
+
+    <div class="narration-wrap">
+      <div id="narration" class="narration" aria-live="polite"></div>
+      <div id="choices" class="choices"></div>
+    </div>
+
+    <div id="party-bar" class="party-bar"></div>
+  </div>
+</div>
+
+<!-- ===== OVERLAY DADO ===== -->
+<div id="dice-overlay" class="modal hidden">
+  <div class="dice-box">
+    <div id="dice-title" class="dice-title"></div>
+    <canvas id="dice-canvas" width="140" height="140"></canvas>
+    <div id="dice-result" class="dice-result"></div>
+    <div id="dice-detail" class="dice-detail"></div>
+    <button class="btn btn-big hidden" id="btn-dice-continue">Continua →</button>
+  </div>
+</div>
+
+<!-- ===== COMBATTIMENTO ===== -->
+<div id="screen-combat" class="screen">
+  <div class="combat-layout">
+    <div class="combat-scene-wrap">
+      <canvas id="combat-canvas" width="960" height="380"></canvas>
+      <div id="combat-banner" class="combat-banner hidden"></div>
+    </div>
+    <div class="combat-ui">
+      <div id="combat-log" class="combat-log"></div>
+      <div id="combat-actions" class="combat-actions"></div>
+    </div>
+    <div id="combat-party-bar" class="party-bar"></div>
+  </div>
+</div>
+
+<!-- ===== MODALI GENERICHE ===== -->
+<div id="modal-generic" class="modal hidden">
+  <div class="modal-box panel-scroll" id="modal-generic-content"></div>
+</div>
+
+<script src="js/sound.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/campaign.js"></script>
+<script src="js/epilogues.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/dice.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
