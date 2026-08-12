@@ -1,7 +1,13 @@
-/* ============ TEST AUTOMATICI — validazione dati e logica ============
+/* ============ TEST AUTOMATICI — validazione dati e logica — TEMPLATE ============
    Uso: node tests/validate.mjs
    Verifica: integrità del grafo delle scene, dati personaggi/nemici/oggetti,
-   sprite ben formati, raggiungibilità dei finali, sanità dei dadi, bilanciamento. */
+   sprite ben formati, raggiungibilità dei finali, sanità dei dadi, bilanciamento.
+
+   QUESTO FILE È UN TEMPLATE: va copiato in tests/validate.mjs del gioco specifico. L'unica
+   parte da adattare è il blocco CONFIG qui sotto — tutti i controlli restano identici nella
+   sostanza e leggono i loro parametri da lì. Dove un controllo non ha senso per la
+   configurazione del gioco (es. bossFinale: null), viene saltato con un messaggio
+   informativo invece di fallire. */
 
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -10,11 +16,16 @@ import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-let failures = 0, warnings = 0, passed = 0;
-function ok(msg) { passed++; }
-function fail(msg) { failures++; console.error('  ❌ FAIL:', msg); }
-function warn(msg) { warnings++; console.warn('  ⚠ WARN:', msg); }
-function section(name) { console.log('\n▶', name); }
+/* ====== CONFIGURAZIONE — l'unica parte da adattare al gioco ====== */
+const CONFIG = {
+  eroiAttesi: 2,                    // quanti personaggi giocabili prevede il gioco (totale, sbloccabili inclusi)
+  eroiSbloccabili: [],               // id degli eroi con `locked: true` (si sbloccano giocando, via unlockHero)
+  oggettiChiave: [],                 // item che il giocatore DEVE poter ottenere (controllo statico di percorso)
+  snodiObbligatori: [],              // id di scena che devono essere raggiungibili (piste principali, snodi, boss)
+  bossFinale: null,                  // chiave/i del BESTIARY usate per la stima del boss finale (stringa, array, o null)
+  flagEsterni: ['sorpresa', 'reputazione'], // flag impostati dal motore (unlockHero, combattimento...), non dalle scene
+  minFinali: 3,                      // numero minimo di finali attesi
+};
 
 /* ---------- carica i moduli di gioco in un contesto Node ---------- */
 const src = ['js/sprites.js', 'js/characters.js', 'js/campaign.js']
@@ -26,12 +37,20 @@ const loader = new Function(`${src}; return { Sprites, HEROES, BESTIARY, ITEMS, 
 let g;
 try {
   g = loader();
-  ok('moduli caricati');
 } catch (e) {
   console.error('❌ ERRORE FATALE nel caricamento dei moduli:', e.message);
   process.exit(1);
 }
 const { Sprites, HEROES, BESTIARY, ITEMS, CAMPAIGN, CAMPAIGN_START, WORLD_MAP, CHAPTERS } = g;
+
+let failures = 0, warnings = 0, passed = 0;
+function ok(msg) { passed++; }
+function fail(msg) { failures++; console.error('  ❌ FAIL:', msg); }
+function warn(msg) { warnings++; console.warn('  ⚠ WARN:', msg); }
+function section(name) { console.log('\n▶', name); }
+function info(msg) { console.log('  ℹ', msg); }
+
+ok('moduli caricati');
 
 /* ---------- 1. grafo delle scene ---------- */
 section('Grafo delle scene');
@@ -57,7 +76,8 @@ for (const [id, scene] of Object.entries(CAMPAIGN)) {
 }
 if (!badRefs) { ok(); console.log(`  ✔ tutti i riferimenti tra ${sceneIds.size} scene sono validi`); }
 
-// raggiungibilità da p1 (RETRY_COMBAT torna a una scena combat: consideriamo raggiungibili le scene combat già visitate)
+// raggiungibilità dalla scena iniziale (RETRY_COMBAT torna a una scena combat: consideriamo
+// raggiungibili le scene combat già visitate)
 const reachable = new Set();
 const queue = [CAMPAIGN_START];
 while (queue.length) {
@@ -81,17 +101,20 @@ ok(); console.log('  ✔ nessun vicolo cieco fuori dai finali');
 
 // i finali sono raggiungibili
 const endings = Object.entries(CAMPAIGN).filter(([, s]) => s.ending).map(([id]) => id);
-if (endings.length < 3) fail(`solo ${endings.length} finali trovati (attesi ≥3)`);
+if (endings.length < CONFIG.minFinali) fail(`solo ${endings.length} finali trovati (attesi ≥${CONFIG.minFinali})`);
 for (const e of endings) {
   if (!reachable.has(e)) fail(`finale "${e}" non raggiungibile`);
 }
 console.log(`  ✔ ${endings.length} finali, tutti raggiungibili: ${endings.join(', ')}`);
 
-// le tre piste della Casa esistono
-if (!reachable.has('k1') || !reachable.has('u1') || !reachable.has('b1')) fail('una delle tre piste della Casa (biblioteca/porte/cucina) non è raggiungibile');
-else console.log('  ✔ tutte e tre le piste (biblioteca, porte, cucina) raggiungibili');
-// lo snodo e la cattedrale sono raggiungibili
-if (!reachable.has('m1') || !reachable.has('z1')) fail('snodo m1 o finale z1 non raggiungibili');
+// gli snodi obbligatori configurati (piste principali, hub, boss) sono raggiungibili
+if (CONFIG.snodiObbligatori.length) {
+  const mancanti = CONFIG.snodiObbligatori.filter(id => !reachable.has(id));
+  if (mancanti.length) fail(`snodo/i obbligatorio/i non raggiungibile/i: ${mancanti.join(', ')}`);
+  else console.log(`  ✔ tutti gli snodi obbligatori raggiungibili: ${CONFIG.snodiObbligatori.join(', ')}`);
+} else {
+  info('CONFIG.snodiObbligatori è vuoto: controllo di raggiungibilità degli snodi saltato');
+}
 
 /* ---------- 2. scelte e requisiti ---------- */
 section('Scelte, oggetti e flag');
@@ -105,7 +128,7 @@ let flagProblems = 0;
 for (const [id, scene] of Object.entries(CAMPAIGN)) {
   for (const c of scene.choices || []) {
     for (const fRef of [c.requires?.flag, c.requires?.flag2, c.requires?.notFlag, ...(c.requires?.flagAny || [])]) {
-      if (fRef && !knownFlags.has(fRef) && !['daniele_in_squadra', 'sorpresa'].includes(fRef)) { fail(`scena "${id}": richiede flag mai impostato "${fRef}"`); flagProblems++; }
+      if (fRef && !knownFlags.has(fRef) && !CONFIG.flagEsterni.includes(fRef)) { fail(`scena "${id}": richiede flag mai impostato "${fRef}"`); flagProblems++; }
     }
     for (const hRef of [c.requires?.hero, c.requires?.heroDead]) {
       if (hRef && !HEROES.some(h => h.id === hRef)) { fail(`scena "${id}": requires.hero inesistente "${hRef}"`); flagProblems++; }
@@ -122,17 +145,27 @@ for (const [id, scene] of Object.entries(CAMPAIGN)) {
   }
   if (scene.unlockHero && !HEROES.some(h => h.id === scene.unlockHero)) { fail(`scena "${id}": unlockHero inesistente "${scene.unlockHero}"`); flagProblems++; }
 }
-// Daniele deve sbloccarsi da qualche parte
-if (!Object.values(CAMPAIGN).some(s => s.unlockHero === 'daniele')) fail('nessuna scena sblocca Daniele (unlockHero)');
+// ogni eroe sbloccabile deve sbloccarsi da qualche parte
+for (const heroId of CONFIG.eroiSbloccabili) {
+  if (!Object.values(CAMPAIGN).some(s => s.unlockHero === heroId)) fail(`nessuna scena sblocca l'eroe sbloccabile "${heroId}" (unlockHero)`);
+}
+if (!CONFIG.eroiSbloccabili.length) info('CONFIG.eroiSbloccabili è vuoto: controllo unlockHero saltato');
 if (!flagProblems) { ok(); console.log(`  ✔ tutti i flag (${knownFlags.size}) e gli oggetti referenziati esistono`); }
 
-// oggetti chiave ottenibili prima di dove servono (controllo statico di percorso)
-const keyItems = ['manuale_annotato', 'joycon_sinistro', 'cuore_colore', 'gocce_dottore', 'foto_meta_federico', 'foto_meta_daniele', 'd20_daniele'];
-for (const it of keyItems) {
-  const given = Object.values(CAMPAIGN).some(s => s.item === it || s.item2 === it || (s.choices || []).some(c => c.item === it) || (s.combat?.loot?.items || []).includes(it));
-  if (!given) fail(`oggetto chiave "${it}" non viene mai dato al giocatore`);
+// oggetti chiave ottenibili prima di dove servono (controllo statico di percorso).
+// "ottenibile" = dato da una scena/combattimento, OPPURE nello zaino di partenza
+// (Engine.newGame in js/engine.js: alcuni giochi partono già con un oggetto in mano).
+if (CONFIG.oggettiChiave.length) {
+  const engineSrcForItems = readFileSync(join(root, 'js/engine.js'), 'utf8');
+  for (const it of CONFIG.oggettiChiave) {
+    const givenInScena = Object.values(CAMPAIGN).some(s => s.item === it || s.item2 === it || (s.choices || []).some(c => c.item === it) || (s.combat?.loot?.items || []).includes(it));
+    const inZainoIniziale = new RegExp(`['"]${it}['"]`).test(engineSrcForItems);
+    if (!givenInScena && !inZainoIniziale) fail(`oggetto chiave "${it}" non viene mai dato al giocatore (né da una scena né nello zaino di partenza)`);
+  }
+  console.log('  ✔ oggetti chiave ottenibili');
+} else {
+  info('CONFIG.oggettiChiave è vuoto: controllo di ottenibilità saltato');
 }
-console.log('  ✔ oggetti chiave ottenibili');
 
 /* ---------- 3. combattimenti ---------- */
 section('Combattimenti');
@@ -150,7 +183,7 @@ for (const [id, scene] of combats) {
 }
 if (!combatProblems) { ok(); console.log(`  ✔ ${combats.length} combattimenti validi (nemici, esiti, loot)`); }
 
-// le sconfitte non-boss portano a sconfitta_generica che deve poter tornare al combattimento
+// le sconfitte non-boss portano a una scena che deve esistere (per poter tornare al combattimento)
 const defeats = new Set(combats.map(([, s]) => s.combat.defeat));
 for (const d of defeats) {
   if (!CAMPAIGN[d]) fail(`scena di sconfitta "${d}" inesistente`);
@@ -161,8 +194,14 @@ console.log(`  ✔ scene di sconfitta esistenti: ${[...defeats].join(', ')}`);
 section('Personaggi e bestiario');
 
 let charProblems = 0;
-if (HEROES.length !== 6) fail(`attesi 6 protagonisti (5 + Daniele), trovati ${HEROES.length}`);
-if (HEROES.filter(h => h.locked).length !== 1 || !HEROES.find(h => h.id === 'daniele')?.locked) fail('Daniele deve essere l\'unico eroe locked');
+if (HEROES.length !== CONFIG.eroiAttesi) fail(`attesi ${CONFIG.eroiAttesi} protagonisti, trovati ${HEROES.length}`);
+const lockedHeroes = HEROES.filter(h => h.locked).map(h => h.id);
+if (CONFIG.eroiSbloccabili.length) {
+  const stesso = lockedHeroes.length === CONFIG.eroiSbloccabili.length && CONFIG.eroiSbloccabili.every(id => lockedHeroes.includes(id));
+  if (!stesso) fail(`gli eroi "locked" (${lockedHeroes.join(', ') || 'nessuno'}) non corrispondono a CONFIG.eroiSbloccabili (${CONFIG.eroiSbloccabili.join(', ')})`);
+} else if (lockedHeroes.length) {
+  fail(`trovati eroi "locked" (${lockedHeroes.join(', ')}) non dichiarati in CONFIG.eroiSbloccabili`);
+}
 for (const h of HEROES) {
   for (const k of ['id','name','class','tagline','role','stats','maxHp','ac','attack','abilities','passive','backstory','voice','sprite']) {
     if (h[k] === undefined) { fail(`eroe "${h.id}": campo mancante "${k}"`); charProblems++; }
@@ -181,7 +220,7 @@ for (const [key, b] of Object.entries(BESTIARY)) {
   if (!Sprites.registry[b.sprite]) { fail(`nemico "${key}": sprite mancante "${b.sprite}"`); charProblems++; }
   if (!b.attack || !b.attack.dice || b.attack.bonus === undefined) { fail(`nemico "${key}": attacco malformato`); charProblems++; }
 }
-if (!charProblems) { ok(); console.log(`  ✔ 6 protagonisti completi (stats, abilità, backstory, sprite) e ${Object.keys(BESTIARY).length} nemici validi`); }
+if (!charProblems) { ok(); console.log(`  ✔ ${HEROES.length} protagonisti completi (stats, abilità, backstory, sprite) e ${Object.keys(BESTIARY).length} nemici validi`); }
 
 /* ---------- 5. sprite ---------- */
 section('Sprite pixel-art');
@@ -205,7 +244,7 @@ if (!spriteProblems) { ok(); console.log(`  ✔ ${Object.keys(Sprites.registry).
 section('Mappa del mondo');
 
 const mapped = new Set(WORLD_MAP.flatMap(l => l.scenes));
-let unmapped = [...sceneIds].filter(id => !mapped.has(id) && id !== 'sconfitta_generica');
+let unmapped = [...sceneIds].filter(id => !mapped.has(id));
 if (unmapped.length) unmapped.forEach(id => warn(`scena "${id}" senza luogo sulla mappa (userà fallback)`));
 const mapGhost = [...mapped].filter(id => !sceneIds.has(id));
 if (mapGhost.length) mapGhost.forEach(id => fail(`la mappa cita una scena inesistente "${id}"`));
@@ -228,7 +267,7 @@ section('Bilanciamento (stime statistiche)');
 
 function heroDPR(h) { // danno medio per round con attacco base
   const [n, s] = h.attack.dice;
-  const statMod = h.stats[h.attack.stat] + (h.id === 'lyra' && h.attack.stat === 'INT' ? 2 : 0);
+  const statMod = h.stats[h.attack.stat];
   const hitChance = Math.min(0.95, Math.max(0.05, (21 - (13 - (statMod + 2))) / 20)); // vs CA 13 media
   const avgDmg = n * (s + 1) / 2 + statMod + (h.attack.bonus || 0);
   return hitChance * avgDmg;
@@ -256,9 +295,18 @@ for (const [id, scene] of combats) {
 }
 console.log('  ✔ stima di bilanciamento per party di 2 completata (vedi eventuali warn)');
 
-const boss = BESTIARY.eleinad_maschera;
-const fullParty = dprs.reduce((t, x) => t + x.dpr, 0) * 1.4;
-console.log(`  ℹ boss fight: HP maschera+vero = ${boss.maxHp + BESTIARY.eleinad_vero.maxHp}, DPR party completo ≈ ${fullParty.toFixed(1)} → ~${Math.ceil((boss.maxHp + BESTIARY.eleinad_vero.maxHp) / fullParty)} round`);
+if (CONFIG.bossFinale) {
+  const bossKeys = Array.isArray(CONFIG.bossFinale) ? CONFIG.bossFinale : [CONFIG.bossFinale];
+  const mancanti = bossKeys.filter(k => !BESTIARY[k]);
+  if (mancanti.length) fail(`CONFIG.bossFinale cita nemici inesistenti nel BESTIARY: ${mancanti.join(', ')}`);
+  else {
+    const bossHp = bossKeys.reduce((t, k) => t + BESTIARY[k].maxHp, 0);
+    const fullParty = dprs.reduce((t, x) => t + x.dpr, 0) * 1.4;
+    console.log(`  ℹ boss finale: HP totali = ${bossHp}, DPR party completo ≈ ${fullParty.toFixed(1)} → ~${Math.ceil(bossHp / fullParty)} round`);
+  }
+} else {
+  info('CONFIG.bossFinale è null: stima dedicata del boss saltata');
+}
 
 /* ---------- 9. testi ---------- */
 section('Qualità dei testi');
@@ -274,22 +322,23 @@ const words = Math.round(totalChars / 6);
 console.log(`  ✔ ${Object.keys(CAMPAIGN).length} scene, ~${words} parole di narrazione (~${Math.round(words / 180)} min di sola lettura ad alta voce)`);
 if (words < 6000) warn('campagna forse corta per 2-4 ore');
 
+/* ---------- capitoli rigiocabili: scene e oggetti devono esistere ---------- */
+section('Capitoli rigiocabili');
 
-
-
-/* ---------- capitoli di "Rivivi la Notte": scene e oggetti devono esistere ---------- */
-section('Capitoli di Rivivi la Notte');
-
-let capitoliRotti = 0;
-for (const c of CHAPTERS) {
-  const dest = c.scene || c.id;
-  if (!CAMPAIGN[dest]) { fail(`capitolo "${c.label}": la scena di destinazione "${dest}" non esiste`); capitoliRotti++; }
-  for (const it of (c.items || [])) {
-    if (!ITEMS[it]) { fail(`capitolo "${c.label}": l'oggetto preparato "${it}" non esiste in ITEMS`); capitoliRotti++; }
+if (CHAPTERS.length) {
+  let capitoliRotti = 0;
+  for (const c of CHAPTERS) {
+    const dest = c.scene || c.id;
+    if (!CAMPAIGN[dest]) { fail(`capitolo "${c.label}": la scena di destinazione "${dest}" non esiste`); capitoliRotti++; }
+    for (const it of (c.items || [])) {
+      if (!ITEMS[it]) { fail(`capitolo "${c.label}": l'oggetto preparato "${it}" non esiste in ITEMS`); capitoliRotti++; }
+    }
+    if (!c.label || !c.desc) { fail(`capitolo "${dest}": manca label o desc`); capitoliRotti++; }
   }
-  if (!c.label || !c.desc) { fail(`capitolo "${dest}": manca label o desc`); capitoliRotti++; }
+  if (!capitoliRotti) { ok(); console.log(`  ✔ ${CHAPTERS.length} capitoli, tutte le destinazioni e gli zaini preparati esistono`); }
+} else {
+  info('CHAPTERS è vuoto: il gioco non usa capitoli rigiocabili, controllo saltato');
 }
-if (!capitoliRotti) { ok(); console.log(`  ✔ ${CHAPTERS.length} capitoli, tutte le destinazioni e gli zaini preparati esistono`); }
 
 /* ---------- stinger dichiarati dalle scene: devono esistere in sound.js ---------- */
 section('Stinger delle scene (nessun suono fantasma)');
@@ -314,8 +363,9 @@ const epiSrc = readFileSync(join(root, 'js/epilogues.js'), 'utf8');
 const campSrc = readFileSync(join(root, 'js/campaign.js'), 'utf8');
 const setsBlocks = [...campSrc.matchAll(/sets:\s*{([^}]*)}/g)].map(m => m[1]).join(' ');
 const settableFlags = new Set([...setsBlocks.matchAll(/([a-z_0-9]+)\s*:/g)].map(m => m[1]));
-// flag impostati fuori dalle scene (motore/combattimento) — da tenere aggiornata a mano
-const FLAG_ESTERNI = new Set(['sorpresa', 'reputazione', 'daniele_in_squadra']); // impostati dal motore (unlockHero, combat)
+// flag impostati fuori dalle scene (motore/combattimento): CONFIG.flagEsterni, più quelli
+// impostati da unlockHero (uno per eroe sbloccabile, per convenzione "<id>_in_squadra")
+const FLAG_ESTERNI = new Set([...CONFIG.flagEsterni, ...CONFIG.eroiSbloccabili.map(id => `${id}_in_squadra`)]);
 const flagRichiesti = new Set([
   ...[...epiSrc.matchAll(/flag:\s*'([a-z_0-9]+)'/g)].map(m => m[1]),
   ...[...campSrc.matchAll(/^\s*\['([a-z_0-9]+)',/gm)].map(m => m[1]), // DIARY_FLAGS
@@ -336,7 +386,6 @@ const senzaConsumatore = [...settableFlags].filter(f => {
   return totale <= inSets;
 });
 if (senzaConsumatore.length) warn(`${senzaConsumatore.length} flag impostati ma senza consumatore di gioco (debito narrativo): ${senzaConsumatore.slice(0, 8).join(', ')}${senzaConsumatore.length > 8 ? ', …' : ''}`);
-
 
 /* ---------- prove ripetibili: check senza once nelle scene rivisitabili ---------- */
 section('Prove nei luoghi rivisitabili (nessuna prova ripetibile)');

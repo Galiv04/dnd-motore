@@ -112,7 +112,7 @@ Normalizzare `drawSprite` sulla griglia 16 (`px = scale * 16 / h`) permette mapp
 "Test verdi prima di ogni push" come convenzione regge finché c'è una sola persona attenta. Una GitHub Action da 15 righe la rende strutturale, per sempre, per chiunque.
 
 **24. La personalizzazione vera sta nei dettagli d'inventario.**
-Tronello, birre al limone, taralli razionati, sfida pancakes-crêpes: i dettagli veri delle persone vere, trasformati in oggetti e scene, hanno reso il gioco "loro" più di qualunque ritratto. Chiedere al committente gli aneddoti minori: sono oro.
+I dettagli veri delle persone vere — un rito di gruppo, una bevanda preferita, un'abitudine buffa, una sfida ricorrente — trasformati in oggetti e scene hanno reso il gioco "loro" più di qualunque ritratto. Chiedere al committente gli aneddoti minori: sono oro. (Gli esempi concreti restano nel repo del singolo gioco, dove è giusto che stiano.)
 
 **25. I testi non devono contare il gruppo.**
 "Sei intrusi in cucina", "sei eroi che salvarono il sole": veri solo col gruppo al completo. Con 2 giocatori stonano subito (segnalato da Gali in partita). Scrivere sempre neutro ("Intrusi in cucina", "gli eroi") o usare il conteggio dal motore.
@@ -139,8 +139,9 @@ hanno evitato il caos: prefissi di scena riservati per blocco, uscite ammesse el
 "ogni flag dichiara il suo consumatore" nel commento di coda di ogni draft.
 
 **30. I contenuti "gate" vanno garantiti nello zaino di partenza.**
-Il cerchio del tronello e il pegno del Mercante richiedevano il `tronello`: se il giocatore non lo
-trovava prima, due contenuti importanti diventavano irraggiungibili. → **Regola**: per ogni scelta
+Due scene distinte in punti diversi della campagna richiedevano lo stesso oggetto di un
+mercante/rito d'inventario: se il giocatore non lo trovava prima, entrambi i contenuti
+diventavano irraggiungibili. → **Regola**: per ogni scelta
 `requires: { item }`, verificare che l'oggetto sia garantito (zaino iniziale o percorso obbligato),
 non solo possibile.
 
