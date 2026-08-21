@@ -202,3 +202,50 @@ fluttuanti, bande nette, aloni squadrati), anche **l'ordine di disegno** (ciò c
 disegnato prima) e la **copertura totale del canvas** (nessun pixel non dipinto: il canvas non
 viene ripulito tra le scene, quindi un buco mostra la scena precedente). E fare l'audit a TUTTI
 i livelli degli effetti dinamici (qui: trip 0 / 0.5 / 1): certi difetti si vedono solo a metà.
+
+
+## Agosto 2026 — Le lezioni della campagna di correzioni (Relais/Casa/Zoom/Corona)
+
+### Design delle scelte (LA lezione)
+1. **Ogni scelta che promette contenuto DEVE consegnarlo in una scena dedicata.** Non solo i verbi di
+   osservazione (osserva/leggi/ascolta): anche i GESTI EMOTIVI (abbracciare, stringere la mano,
+   promettere, mostrare un oggetto a qualcuno, salutare una voce) — se il gioco imposta un flag,
+   il momento contava, e il personaggio DEVE reagire. Un abbraccio che "continua e basta" è una
+   promessa tradita (feedback diretto del committente).
+2. **Scanner in due livelli**: (a) verbi di rivelazione + destinazione condivisa + soli effetti numerici;
+   (b) QUALSIASI scelta con `sets:` e destinazione condivisa → sospetta finché non riclassificata come
+   gesto auto-contenuto. Un gesto è auto-contenuto solo se l'ESITO è già nel testo della scelta
+   ("La previsione n°49: 'Domani, alba. GARANTITA.'") — mai "chiedere X" senza la risposta.
+3. Gli effetti devono avere senso diegetico: l'oro/valuta per valore materiale plausibile,
+   la cura per gesti che ristorano. Niente `gold: 1` su "giurare il silenzio".
+
+### Pipeline e strumenti
+4. **Batch di modifiche via script**: confini di scena ANCORATI (`^  id: \{` ... `^  \},` multiline),
+   MAI `.*?` fino a un marcatore generico (sconfina nella scena dopo); gestire ENTRAMBI i formati di
+   choices (multilinea e inline); VERIFICA PER-SCENA dopo ogni replace (il testo inserito deve stare
+   dentro il blocco della scena); scrivere il file SOLO se tutte le asserzioni passano.
+5. **Mai mascherare gli exit code con le pipe**: `node tests/... | tail` ritorna l'exit di tail.
+   Test standalone, poi commit. (Un push è partito con un validatore rosso per questo.)
+6. **La suite è fragile ai seed**: aggiungere scelte sposta il flusso random del bot → gli scenari
+   che dipendevano dalla fortuna del seed divergono. Cura: scenari DETERMINISTICI (forced choices,
+   sequences) per i percorsi che i verify richiedono; `TEST_FILTER`/`TEST_DUMP` nel harness per il
+   debug mirato; diagnostica del LOOP INFINITO che stampa le scene più visitate.
+7. **Le scelte forzate del bot possono loopare** (z1<->z_smemorati x979): mai forzare su una scena
+   rivisitabile una scelta che ci ritorna; rete di sicurezza dopo N usi.
+8. **`once` sulle porte dei contenuti = soft-lock**: se un duello/stanza si può "sospendere",
+   la porta deve chiudersi sulla VITTORIA (`requires: { notFlag: vinto }`), non sul primo ingresso.
+9. **requestAnimationFrame è sospeso a pagina nascosta**: ogni loop canvas ha bisogno del fallback
+   a timer (watchdog 500ms) o si congela in test/embed.
+10. **Cache di Pages e del browser**: dopo il deploy servono ~10' + un hard-refresh (Cmd+Shift+R);
+    la verifica live si fa con fetch {cache:'reload'} + reload.
+11. **I numeri del bilanciamento non si ritoccano alla cieca**: un +12% PV applicato ANCHE ai boss
+    (già tarati al limite) ha reso lo scontro finale un muro. I buff di difficoltà si applicano
+    ai nemici normali, i boss si ritoccano singolarmente.
+12. **Ogni gioco della serie condivide i moduli** (minigames.js, pattern del motore): si sviluppa nel
+    repo più avanzato e si SINCRONIZZANO le copie nello stesso giro di push.
+13. **Geografia e nomi reali** (richiesta committente): itinerari veri verificabili (Minturno → A16 →
+    Passo di Mirabella → Fontanarosa → Paternopoli); le distanze devono reggere (un "bar a due ore
+    a piedi" deve stare a due ore a piedi).
+14. **Revisione periodica con agenti paralleli**: un revisore per gioco con le regole di qualità nel
+    prompt trova ciò che gli scanner non vedono (guardie [[eroe:]] mancanti, promesse di flag mai
+    consumate nei finali, incoerenze di continuità).
