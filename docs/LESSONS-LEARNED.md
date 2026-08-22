@@ -463,3 +463,66 @@ Corollari raccolti nello stesso giro:
 - **Non testare una combinazione non vincibile come se lo fosse**: "un eroe solo + difficoltà
   massima" non è una configurazione da vincere. Le due dimensioni si provano separate — solitario
   in facile, difficoltà massima in due.
+
+### 25. Un id del DOM sbagliato non dà errore: fa peggio
+
+`showScreen('screen-scene')` in una funzione nuova del motore, con `index.html` che dichiara
+`screen-game`. `getElementById` restituisce `null`, la riga non fa niente, **nessun errore** — e la
+schermata di combattimento restava attiva. Risultato: dopo una sconfitta il gioco rimbalzava sullo
+stesso scontro all'infinito. Ci sono voluti tre giri di test per capire che il problema non era il
+bilanciamento dei boss ma **una stringa sbagliata di cinque caratteri**.
+
+Nel validatore, adesso, due controlli distinti:
+
+```js
+// 1. ogni id usato dal codice esiste — in index.html O in un template JS
+//    (le modali creano elementi a runtime dentro innerHTML: sono legittimi)
+const idsDinamici = new Set([...jsTutti.matchAll(/id=["'`]?([a-zA-Z0-9_-]+)["'`]?[\s>]/g)].map(m => m[1]));
+
+// 2. le SCHERMATE, invece, devono stare in index.html: una schermata non si crea a
+//    runtime, e showScreen con un id sbagliato non fallisce, lascia attiva quella di prima
+for (const m of jsTutti.matchAll(/showScreen\('([a-zA-Z0-9_-]+)'\)/g))
+  if (!idsHtml.has(m[1])) fail(`showScreen('${m[1]}'): quella schermata non esiste`);
+```
+
+Al primo giro il controllo ha trovato **altri sei** id che sembravano fantasma e invece nascono
+dentro l'innerHTML delle modali: la distinzione fra «creato a runtime» e «non esiste» è la parte
+che fa la differenza fra un controllo utile e uno che urla al vento.
+
+### 26. Il matcher dei test è case-sensitive, e i testi cominciano con la maiuscola
+
+Uno scenario forzava la scelta con `'se la ricorda, la cosa che cantava'` mentre il bottone dice
+`'🎶 "Signora Rosa. Se la ricorda, la cosa che cantava?"'`. `String.includes` è case-sensitive:
+il match falliva, il bot prendeva una scelta a caso, e la copertura di quel ramo restava a zero
+**senza nessun errore** — solo un `❌` su un flag mancante, tre sezioni più in basso.
+
+Cura: nei matcher usare un frammento **interno** alla frase (mai la prima parola, che è quasi sempre
+capitalizzata dopo l'emoji), oppure normalizzare il confronto. E quando un flag risulta mancante,
+sospettare **prima** il matcher e poi il gioco.
+
+### 27. Il numero che rende un boss invincibile è il DANNO, non i punti vita
+
+Il caso peggiore del bilanciamento, e il più facile da diagnosticare male. In Pandataria i boss
+avevano PV tarati per 6-9 turni, e sembrava giusto. Ma il danno era 11-15 medi contro eroi da 22-24
+PV: **un eroe cadeva in due colpi**. Nessuna quantità di PV in più o in meno sistema quella
+situazione — è invincibile per costruzione, e i test lo mostravano come «loop di checkpoint», cioè
+come un problema di struttura, non di numeri.
+
+Il conto che va nel validatore, e che vale per tutta la serie:
+
+```js
+const dannoMedio = n * (facce + 1) / 2 + (attack.plus || 0);
+const pvMin = Math.min(...HEROES.map(h => h.maxHp));
+const colpiRetti = Math.ceil(pvMin / dannoMedio);
+if (colpiRetti < 3) fail(`boss "${k}": uccide l'eroe più fragile in ${colpiRetti} colpi ma servono ~${round} round per abbatterlo: matematicamente invincibile`);
+```
+
+Soglie: l'eroe più fragile deve reggere **almeno 3 colpi** (4-5 è la zona buona) e il boss deve
+cadere in **4-10 round** per il party minimo realistico. Le due condizioni insieme, mai una sola.
+
+Stesso conto per i nemici **normali**, che però arrivano in gruppo: due nemici da 6 danni sono 12 al
+round, e un eroe da 22 PV cade in due turni. Il validatore somma il danno di tutti i nemici della
+scena e avvisa quando supera metà dei PV dell'eroe più fragile.
+
+E la conseguenza pratica: quando un test dice «il gruppo non ce la fa», la prima cosa da guardare
+non è quanto vive il nemico, è **quanto vive l'eroe**.
