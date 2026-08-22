@@ -45,15 +45,37 @@ mg1: {
 // il motore, in renderChoices: if (scene.minigame) Minigames.start(scene.minigame, G, gotoScene)
 ```
 
-### Tipi v1
+### Le firme REALI delle config (lette da `js/minigames.js`, agosto 2026)
 
-| Tipo | Chi gioca | Comandi | Config | Ispirazione |
-|---|---|---|---|---|
-| `corsa` | 1 eroe (sprite pixel del personaggio!) | UN tasto/tap = salto | `{ speed, durata, ostacoli: 'siepi'\|'libri'\|..., sfondo }` | Flappy/Mario runner |
-| `indovinello` | il tavolo | scelta tra 3-4 risposte (+1 "arrendersi" che porta al fail con dignità) | `{ testo, risposte: [{t, ok}], indizio? }` | enigmi classici D&D |
-| `memoria` | 1 eroe o tavolo | ripetere una sequenza cliccando (luci/suoni, cresce di 1 a giro) | `{ lunghezza, simboli: ['🕯','🔔',...] }` | Simon |
-| `calcolo` | il tavolo | risposta a scelta multipla con TIMER visibile | `{ domande: [{q, r: [{t, ok}]}], secondi }` | Big Bang Theory / quiz lampo |
-| `filastrocca` | il tavolo | completare il verso mancante (scelta multipla) | `{ versi: [...], buco, risposte }` | canzoncine/filastrocche |
+> ⚠️ **Queste non si ricordano, si rileggono.** Ho scritto `config: { problema, risultato }` per il
+> tipo `calcolo`, e in parallelo tre agenti hanno fatto lo stesso errore. Il modulo legge
+> `{ domande: [...] }`: nessun errore a runtime, il minigioco parte **vuoto**, e te ne accorgi solo
+> giocandoci. Il validatore di Pandataria ora ha una tabella `MG_SPEC` che **fallisce** su qualunque
+> chiave di config che il modulo non legge — copiala nei validatori degli altri giochi.
+
+| Tipo | Chi gioca | Comandi | Config reale |
+|---|---|---|---|
+| `apnea` | 1 eroe (Claudia) | TIENI PREMUTO = scendi, LASCI = risali | `{ titolo, profondita, oggetto, cosa, extra, extraFlag, cosaExtra }` — **non** `fiato`: viene dalla risorsa del gruppo |
+| `corsa` | 1 eroe (sprite vero) | un tasto/tap = salto | `{ titolo, ostacoli, tema: 'siepi'\|'libri'\|'lavatrici'\|'tornanti', velocita, cielo, suolo }` |
+| `indovinello` | il tavolo | una risposta sola | `{ titolo, testo, risposte: [{t, ok: true}, {t}, …] }` |
+| `memoria` | 1 eroe o tavolo | ripetere la sequenza | `{ titolo, lunghezza, simboli: ['🔦','🚪',…] }` |
+| `calcolo` | il tavolo | scelta multipla **a tempo**, serve 2/3 di giuste | `{ titolo, secondi, domande: [{ q, r: [{t, ok: true}, {t}] }] }` |
+| `filastrocca` | il tavolo | completare il verso | `{ titolo, versi (con `___` per la lacuna, `\n` per andare a capo), risposte: [{t, ok: true}, …] }` |
+
+Regole trasversali, verificate dal validatore:
+- **Esattamente una** risposta con `ok: true` per domanda, e almeno due risposte.
+- `minigame.hero` è un id di eroe esistente. Attenzione: `pickHero` restituisce l'eroe indicato
+  **anche se morto** — se la morte è possibile a quel punto della storia, ometti `hero` e lascia
+  scegliere il tavolo fra i vivi.
+- **Una scena con `minigame` (o `combat`) ignora del tutto le sue `choices`**: l'engine mette il
+  pulsante di gioco e fa `return`. Le scelte scritte lì sotto sono testo morto che nessuno vedrà, e
+  gonfiano falsamente le metriche di densità. Metti `choices: []` e usa `minigame.tag` per la riga
+  sotto il pulsante.
+- Il `fail` **non è mai un vicolo cieco e non è mai un game over**: è una scena peggiore, scritta.
+- Se il minigioco dipende da una risorsa (in Pandataria il Fiato è l'aria dell'apnea), il briefing
+  deve dire **la verità** su cosa è raggiungibile con quello che il giocatore ha adesso: *«con questo
+  fiato arrivate a 22 metri, e quella cosa sta a 34: non ce la fate»*. Un briefing che mente fa
+  crollare tutta la meccanica, e va verificato nei test (Pandataria registra le `apneaBugie`).
 
 ### Contratto di rendering
 - Ogni tipo disegna dentro `#minigame-overlay` (full screen, sopra la scena, stile pixel coerente).

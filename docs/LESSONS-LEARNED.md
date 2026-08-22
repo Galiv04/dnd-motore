@@ -259,3 +259,207 @@ i livelli degli effetti dinamici (qui: trip 0 / 0.5 / 1): certi difetti si vedon
 14. **Revisione periodica con agenti paralleli**: un revisore per gioco con le regole di qualità nel
     prompt trova ciò che gli scanner non vedono (guardie [[eroe:]] mancanti, promesse di flag mai
     consumate nei finali, incoerenze di continuità).
+
+---
+
+## Agosto 2026 — seconda tornata: le risorse decorative
+
+Feedback del committente dopo aver giocato, parola per parola:
+
+> «Non mi convince questa valuta del fiato, così come quella della lucidità o della fattanza, perché
+> alla fine non sono davvero utilizzate nel gioco, **non fanno nulla**. Se sono utili e hanno un
+> effetto di qualche tipo, usiamole, altrimenti no: teniamo i punti vita, gli stati tipo avvelenato,
+> i potenziamenti, e la morte che si recupera con gli oggetti trovati o craftati. E se muoiono tutti,
+> si riparte da un checkpoint. Fatto bene, veramente giocabile.»
+
+### 15. Se una risorsa non ha effetti visibili, non esiste — e il conto lo dice subito
+
+La misura è banale e va fatta **prima** di scrivere le scene, non dopo:
+
+```bash
+grep -c "gold: "        js/campaign.js   # quante volte la DAI
+grep -c "requiresGold"  js/campaign.js   # quante volte la fai SPENDERE
+```
+
+I numeri dei quattro giochi al momento del feedback:
+
+| gioco | valuta | la dà | la spende | verdetto |
+|---|---|---|---|---|
+| relais | 🕯 Sangue Freddo | 212 | 4 | decorativa |
+| casa | 🎨 Colore | 174 | 7 | decorativa |
+| zoom | 🍄 Fattanza | 48 | 4 | un effetto reale, mai spiegato |
+| corona | 💰 monete | 53 | 20 | sana (c'è un mercante) |
+
+**Regola**: il rapporto dare/spendere sta sotto 6:1, altrimenti il tetto si satura entro il primo
+atto e il numero smette di significare qualcosa. Una risorsa che si satura è peggio di nessuna
+risorsa, perché occupa spazio nella HUD e insegna al giocatore che i numeri lì non contano.
+
+### 16. Una risorsa vera fa UNA cosa, e il gioco la dice dentro il gioco
+
+In Pandataria il Fiato è stato riscritto così: **non compra niente, non c'è negozio**. È l'aria dei
+minigiochi d'apnea. `Engine.apneaFiato()` lo traduce in aria, `Engine.metriPossibili()` in metri
+raggiungibili, e il briefing dell'immersione scrive in chiaro:
+
+> «Con il fiato che avete adesso (68) arrivate a circa **22 metri** — e quella cosa sta a 34.
+> **Non ce la fate.** Andate a mangiare, a dormire, o riparate la bombola, e tornate.»
+
+Questo è il test: **il giocatore capisce a cosa serve la risorsa senza leggere i doc?** Se la
+risposta è no, la risorsa non è progettata, è decorata. La HUD dell'inventario deve contenere la
+spiegazione, non un numero.
+
+Corollario: si guadagna **solo con le cose umane** (mangiare, dormire, ridere, stare fermi un
+momento con l'altro), mai combattendo per combattere. Così l'economia insegna il tema del gioco
+invece di contraddirlo.
+
+### 17. I potenziamenti sono OGGETTI, e il log deve nominare l'effetto quando scatta
+
+Niente livelli, niente punti da spendere. Si diventa più forti solo trovando e combinando cose, e
+**ogni oggetto craftato ha un effetto che il log del combattimento nomina per esteso**:
+
+```
+💍 Le due fedi, legate con la lenza, battono l'una contro l'altra nella tasca: +2 PV a tutti.
+📿 Duemila anni e la riconosce ancora: -10 PV, e smette di succhiare vita agli altri.
+```
+
+Un bonus che si applica in silenzio è indistinguibile da un bonus che non c'è. Stesso discorso per
+i **misteri risolti**: il premio deve avere un effetto meccanico e una riga di log. Il validatore
+ora fallisce se il flag-premio di un mistero non è usato da nessuna parte (`usi < 2`).
+
+### 18. Morire non è un game over: si riparte dal checkpoint
+
+`Engine.riprendiDaCheckpoint()`. Nell'ordine:
+
+1. Se il gruppo ha l'oggetto che **paga la morte** (in Pandataria l'Àncora di Voce), si consuma e
+   lo scontro riprende a metà PV. È l'unico modo in cui la morte si annulla, ed è un oggetto che il
+   giocatore ha costruito con le sue mani.
+2. Altrimenti si torna all'ultimo checkpoint con lo **snapshot di allora** — party, zaino, flag,
+   risorsa, ricette — salvato quando il checkpoint è scattato. Quello che avevi capito dopo l'hai
+   perso, e **la modale te lo dice per nome**: *«Vi manca: la collana di Giulia, il registratore.»*
+3. Solo se non esiste nessun checkpoint (morire nel primo atto) si va al game over vero.
+
+Lo snapshot va preso **dentro il blocco dei `CHECKPOINT_FLAGS`**, con `JSON.stringify`, non
+ricostruito dopo. E la modale del ritorno è una scena vera, scritta: in Pandataria ci si risveglia
+asciutti alle Paracine, e l'essere asciutti è la parte peggiore.
+
+### 19. Le firme delle config dei minigiochi si LEGGONO, non si ricordano
+
+Errore commesso di nuovo, stavolta da me e in parallelo da tre agenti: scrivere
+`config: { problema, risultato }` per il minigioco `calcolo`, che in realtà legge
+`config: { titolo, secondi, domande: [{ q, r: [{t, ok}] }] }`. Nessun errore a runtime: il
+minigioco parte **vuoto**. Le firme reali stanno in `js/minigames.js` e vanno rilette ogni volta.
+
+Cura strutturale, ora nel validatore di Pandataria: `MG_SPEC` elenca per ogni tipo di minigioco le
+chiavi ammesse e quelle obbligatorie, e il test **fallisce su qualunque chiave di config che il
+modulo non legge**. Stessa medicina applicata a tutte le chiavi di scena e di scelta
+(`CHIAVI_SCENA`, `CHIAVI_SCELTA`, `CHIAVI_REQUIRES`), con la controprova inversa: se la whitelist
+ammette `scene.X` ma il motore non contiene `scene.X`, esce un warning.
+
+### 20. Una scena con `minigame` o `combat` IGNORA le sue `choices`
+
+L'engine mette il pulsante di gioco e fa `return`. Le scelte scritte lì sotto sono testo morto che
+nessuno vedrà mai — e gonfiano le metriche di densità dando l'illusione che il gioco sia più ramificato
+di quanto sia. Va messo `choices: []` e usato `minigame.tag` per la riga sotto il pulsante. Il
+validatore ora lo controlla.
+
+### 21. I metadati delle repo su GitHub sono parte del prodotto, e vanno allineati
+
+Segnalazione del committente: *«la descrizione e i temi delle repo su GitHub non sono allineate»*.
+Aveva ragione — allo stato del 22 agosto 2026: due giochi su quattro avevano la descrizione **vuota**,
+nessuna repo aveva **un solo topic**, e **nessuna** aveva l'URL di GitHub Pages nel campo *Website*,
+pur avendo tutte le Pages pubblicate e funzionanti. Chi arrivava sul profilo vedeva quattro cartelle
+anonime e non un link per giocare.
+
+**La repo è la vetrina.** Il gioco più bello del mondo, con la descrizione vuota, è una cartella.
+
+Checklist da eseguire **a ogni nuovo gioco e a ogni cambio di titolo o di numero di finali**:
+
+```bash
+gh repo edit Galiv04/<repo> \
+  --description "<emoji> <Titolo> — <genere> interattivo in italiano per N giocatori: <gancio in una riga>. <N> finali. Giocabile nel browser, zero installazioni." \
+  --homepage "https://galiv04.github.io/<repo>/" \
+  --add-topic gioco-italiano --add-topic avventura-testuale --add-topic interactive-fiction \
+  --add-topic vanilla-javascript --add-topic github-pages --add-topic zero-dependencies \
+  --add-topic dungeons-and-dragons --add-topic <genere-specifico>
+```
+
+Formato della descrizione, identico per tutta la serie: **emoji · titolo · genere e lingua · numero
+di giocatori · un gancio di una riga · numero di finali · «Giocabile nel browser, zero installazioni»**.
+
+Topic: i sei comuni della serie (`gioco-italiano`, `avventura-testuale`, `interactive-fiction`,
+`vanilla-javascript`, `github-pages`, `zero-dependencies`), più `dungeons-and-dragons`, più uno
+specifico del genere (`horror`, `fantasy`, `psichedelico`, …). Il repo del motore non porta
+`github-pages` (non ha un sito) e prende `game-engine` e `documentation`.
+
+**I numeri nella descrizione devono essere veri**, e si verificano, non si ricordano:
+
+```bash
+grep -c "ending:" js/campaign.js              # quanti finali
+grep -oE 'class="game-subtitle">[^<]*' index.html   # quanti giocatori, com'è scritto nel gioco
+```
+
+La descrizione della repo, il `<title>`, il `<meta name="description">`, la `game-subtitle` sulla
+schermata del titolo e il README **devono raccontare la stessa cosa con gli stessi numeri**. Se il
+gioco guadagna un finale, si aggiornano tutti e cinque nello stesso giro.
+
+Verifica finale, da fare sempre dopo le modifiche (i comandi `gh repo edit` non danno conferma utile):
+
+```bash
+gh repo list --limit 30 --json name,description,repositoryTopics,homepageUrl
+```
+
+### 22. Un checkpoint senza via d'uscita è un loop, non una difficoltà
+
+Conseguenza diretta della lezione 18. Implementata la ripartenza dal checkpoint, la prima partita
+simulata **non è finita più**: gruppo troppo debole → sconfitta → ritorno al checkpoint → stessa
+strada → stessa sconfitta, per sempre. Non un game over e non una vittoria: un rimbalzo.
+
+Tre pezzi, tutti necessari:
+
+1. **Pietà progressiva.** Ogni ritorno dal checkpoint toglie il 12% delle forze a chi vi ha ucciso
+   (fino a un terzo), e il log del combattimento **lo dice**: *«Anche loro sono stanchi: siete già
+   tornati due volte, e rifarvi da capo costa fatica anche al Coro.»* Il gioco cede, non il giocatore.
+2. **Una via d'uscita esplicita.** Dal terzo ritorno la modale offre un secondo bottone: andarsene
+   adesso, che porta a un **finale vero** (quello in cui si esce vivi senza aver capito), non a una
+   schermata di resa. *«Andarsene adesso è una fine vera, non una resa.»*
+3. **Una guardia nel test.** `if (G.stats.checkpointRitorni > 4) throw` con un messaggio che nomina
+   il problema. Senza, un loop di checkpoint non si presenta come errore: si presenta come una suite
+   lenta, e la si scambia per un problema di prestazioni.
+
+### 23. I boss si tarano sul party che il giocatore ha davvero, non sul caso migliore
+
+Rifacimento della lezione 11. La stima di bilanciamento usava il **party pieno** (tre eroi): i boss
+sembravano giusti a 5-6 round. Ma il terzo eroe si unisce solo il terzo giorno e può non essere
+nello scontro, quindi il caso reale è **due**, e a due gli stessi boss diventavano da 14 round. Un
+boss da 14 round non è difficile: è noioso.
+
+Il validatore ora stampa entrambi i numeri e **fallisce** (non avvisa) sopra gli 11 round per due
+giocatori:
+
+```
+ℹ boss "IL CORO": 170 PV → ~10 round in DUE, ~6 col terzo
+```
+
+Regola: 4-10 round per il party minimo realistico. Sotto i 4 non è un boss, sopra i 10 è una
+maratona. E gli oggetti craftati e i misteri risolti devono accorciarlo **visibilmente** — il che
+è anche il modo in cui il giocatore scopre che servivano.
+
+### 24. Il finto DOM dei test va tenuto al passo col motore
+
+`document.documentElement.style.setProperty('--prof', …)`: una riga nuova nel motore (la profondità
+pilotata via variabile CSS) e tutte e tredici le partite simulate sono morte con
+`Cannot read properties of undefined (reading 'style')` — dentro `Engine.newGame`, prima della prima
+scena. Il finto documento non aveva un `documentElement`.
+
+Corollari raccolti nello stesso giro:
+- **Un `fail()` dentro un'invariante chiamata a ogni passo stampa migliaia di righe** e la suite
+  sembra bloccata. Le invarianti che descrivono uno *stato* vanno segnalate **una volta per run**
+  (un `Set` di ciò che si è già detto), non a ogni passo.
+- `execute()` stampava solo `error.split('\n')[0]`: il messaggio senza lo stack. Mezz'ora buttata a
+  indovinare da dove venisse un `reading 'usable'`. Stampare le prime 4-5 righe di stack **e** la
+  scena corrente (`sceneId` + le ultime scene attraversate) è la differenza tra un minuto e un'ora.
+- Un id nello zaino che non esiste in `ITEMS` fa esplodere ogni `ITEMS[it].qualcosa`. Due difese:
+  le letture in combattimento diventano `ITEMS[it] && ITEMS[it].x`, e un'invariante di test che
+  **nomina** l'oggetto sconosciuto.
+- **Non testare una combinazione non vincibile come se lo fosse**: "un eroe solo + difficoltà
+  massima" non è una configurazione da vincere. Le due dimensioni si provano separate — solitario
+  in facile, difficoltà massima in due.
