@@ -219,6 +219,16 @@ i livelli degli effetti dinamici (qui: trip 0 / 0.5 / 1): certi difetti si vedon
 3. Gli effetti devono avere senso diegetico: l'oro/valuta per valore materiale plausibile,
    la cura per gesti che ristorano. Niente `gold: 1` su "giurare il silenzio".
 
+15. **`sets` sulla SCELTA scatta anche se la prova FALLISCE.** Il motore applica gli effetti della
+    scelta prima di tirare il dado: un flag di scoperta messo sulla scelta fa dichiarare al diario
+    conoscenze mai acquisite. I flag di ESITO vanno sulla scena di successo, non sulla scelta.
+    Scan: scelte con `sets` + `check` con `success !== fail`.
+16. **`heal`/`damage`/`goldLoss` sulle scelte non esistevano nei motori** (solo `gold`, `item`,
+    `removeItem`, `sets`, `rep`): 91 scelte nei quattro giochi dichiaravano effetti muti. Aggiunti
+    in `resolveChoice` con la stessa semantica delle scene. Regola generale: **se una chiave di dati
+    non è implementata, è una bugia al lettore del codice** — quando si inventa un campo, si aggiunge
+    subito al motore E al validatore.
+
 ### Pipeline e strumenti
 4. **Batch di modifiche via script**: confini di scena ANCORATI (`^  id: \{` ... `^  \},` multiline),
    MAI `.*?` fino a un marcatore generico (sconfina nella scena dopo); gestire ENTRAMBI i formati di
