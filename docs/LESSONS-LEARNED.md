@@ -877,3 +877,21 @@ Stessa disciplina ha evitato una correzione inutile: sembrava che entrando in co
 pagina restasse a metà. Misurato: al cambio di scena il documento si accorcia e il browser riporta
 lo scorrimento a zero da sé. Non c'era niente da correggere, e aggiungere uno `scrollTo` avrebbe
 solo aggiunto codice da mantenere.
+
+### 43. Il testo non si scrive dentro un canvas
+
+Due volte lo stesso errore. La pianta è un canvas da **720×480** che sul telefono viene mostrato a
+**289×195**: scala 0,40, quindi i nomi delle stanze scritti a 9px arrivavano a **3,6px** — un impasto
+grigio dove si leggeva «La Sala Switch» solo sapendo già cosa c'era scritto. Il campo di battaglia è
+un canvas da **960×380** mostrato a **355×141**: scala 0,37, e nessuna misura di carattere può
+salvare un *nome* lì dentro — a 30px «cameriere» sarebbe largo 270px su nemici distanti 90px.
+
+La regola: **nel canvas vanno solo cose che restano leggibili rimpicciolite** — numeri, icone,
+barre, simboli. Le parole vanno in DOM, dove non si scalano con l'immagine. Nella pianta sono
+rimasti i numeri e i nomi stanno in una legenda sotto; sul campo di battaglia sono rimasti i numeri
+sopra i nemici e sotto la cornice c'è l'elenco «1 Sussurri 32/32 · 2 Eco 16/16», che come effetto
+collaterale dà i **punti vita esatti** — cosa che una barra di 3px non ha mai detto.
+
+Prima di scrivere in un canvas: calcolare `larghezza_mostrata / larghezza_interna` e verificare che
+il carattere reso stia sopra i ~10px veri. Se non ci sta, non è un problema di misura: è testo nel
+posto sbagliato.
