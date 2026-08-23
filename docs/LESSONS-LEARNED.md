@@ -526,3 +526,64 @@ scena e avvisa quando supera metà dei PV dell'eroe più fragile.
 
 E la conseguenza pratica: quando un test dice «il gruppo non ce la fa», la prima cosa da guardare
 non è quanto vive il nemico, è **quanto vive l'eroe**.
+
+### 28. La soglia sui «corridoi» era la metrica sbagliata, e spingeva a sbagliare
+
+La regola della serie diceva: *corridoi ≤15%*, dove corridoio = scena con una sola scelta.
+Misurandola sui cinque giochi, il verdetto sembrava brutto:
+
+| gioco | scelte/scena | corridoi | scelte per NODO di decisione | corridoi STERILI |
+|---|---|---|---|---|
+| relais | 1,85 ✗ | 20,5% ✗ | **2,41** ✔ | **1** |
+| casa | 1,83 ✗ | 27,0% ✗ | **2,47** ✔ | **6** |
+| zoom | 2,09 ✗ | 12,8% ✔ | **2,61** ✔ | **0** |
+| corona | 1,94 ✗ | 10,9% ✔ | **2,42** ✔ | **2** |
+| pandataria | 2,39 ✔ | 5,2% ✔ | **2,96** ✔ | **0** |
+
+Poi ho letto le scene. Dei 67 «corridoi» di Casa, quasi tutti sono **battute**: sotto-scene che
+chiudono un momento — *«Diciassette. Non era un buon segno: era una FIRMA.»* — cioè esattamente
+quello che la regola «scena 6-14 righe, se serve più spazio si spezza in due» chiede di fare.
+Inseguire quel numero significa aggiungere seconde scelte finte alle battute: **il difetto che il
+committente ha segnalato tre volte giocando.** La metrica spingeva verso il male che doveva impedire.
+
+Le due misure che contano, ora in tutti e cinque i validatori:
+
+1. **Scelte per NODO DI DECISIONE** — la media sulle sole scene con ≥2 scelte. Quando il gioco ti
+   offre una scelta, quanto è ricca? Soglia **≥2.2**. Tutti i giochi stanno fra 2,4 e 3,0.
+2. **CORRIDOI STERILI** — una sola uscita **e** nessun effetto: niente item, sets, check, cure,
+   danni, valuta, combattimento, minigioco, finale. *Quelli* sono riempitivo. Soglia: 0, o
+   pochissimi e giustificati.
+
+Il numero grezzo di corridoi resta stampato, ma come informazione, non come voto.
+
+**E il rimedio per un corridoio sterile non è una seconda scelta**: è dare alla scena l'effetto che
+il suo testo già afferma. I sei di Casa chiudevano tutti dichiarando qualcosa di vero che il gioco
+non ricordava — «Daniele ci ha risposto con le luci», «Daniele si era fatto la scorta di blu» — e
+sono diventati sei flag con sei voci di diario. Zero scelte aggiunte, zero prosa toccata, e adesso
+il gioco si ricorda quello che dice.
+
+### 29. Una pipeline di draft scollata dal gioco è una mina innescata
+
+In Casa `js/campaign.js` aveva **248 scene** e `drafts/` **184**: la pipeline era stata abbandonata
+a metà e il file generato era diventato la fonte vera. `node tests/assemble.mjs`, il comando che il
+CLAUDE.md di quel repo consiglia, avrebbe cancellato **64 scene in silenzio**.
+
+Due cose, entrambe necessarie:
+
+1. **Rigenerare i draft dal file vero**, e verificarlo nel solo modo che conta: riassemblare e
+   confrontare **carattere per carattere** con l'originale. Se non è identico, il taglio è sbagliato
+   (i miei primi confini sbagliavano di 19 caratteri: la riga `const CAMPAIGN = …` che l'assemble
+   aggiunge da sé, e le righe vuote intorno).
+2. **Una guardia nell'assemble**, in tutti i repo che ne hanno uno:
+
+```js
+const nNuovo = contaScene(nuovo), nVecchio = contaScene(vecchio);
+if (vecchio && nNuovo < nVecchio) {
+  console.error(`❌ RIFIUTO DI SCRIVERE: i draft producono ${nNuovo} scene, il file attuale ne ha ${nVecchio}.`);
+  process.exit(1);
+}
+```
+
+Regola generale: **uno strumento che può distruggere lavoro deve rifiutarsi di farlo**, non fidarsi
+di chi lo lancia. E l'assemble ora stampa il conteggio delle scene, non solo i caratteri: un numero
+di caratteri non dice niente, un numero di scene sì.
