@@ -25,9 +25,16 @@
 import { deflateSync } from 'zlib';
 
 /* ---------- colore ---------- */
+/* Quanti colori non validi sono stati assegnati durante il disegno. Serve, perché il
+   browser IGNORA in silenzio un colore che non capisce e continua a usare il
+   precedente: un `rgb(NaN,NaN,NaN)` — che è quello che produce shade(mix(...)), dato
+   che shade vuole un esadecimale — non si vede mai, e la scena resta col colore di
+   un'altra cosa. Qui si fa come il browser (si ignora) ma si CONTA. */
+export const colorìSballati = { n: 0, esempi: [] };
+
 function colore(v) {
   if (typeof v === 'object' && v && v.__gradiente) return v;
-  if (typeof v !== 'string') return [0, 0, 0, 1];
+  if (typeof v !== 'string') return null;
   const s = v.trim();
   if (s[0] === '#') {
     const h = s.slice(1);
@@ -35,16 +42,26 @@ function colore(v) {
     if (h.length === 4) return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16), parseInt(h[3] + h[3], 16) / 255];
     if (h.length === 6) return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1];
     if (h.length === 8) return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), parseInt(h.slice(6, 8), 16) / 255];
-    return [0, 0, 0, 1];
+    return null;
   }
   const m = /^rgba?\(([^)]*)\)$/i.exec(s);
   if (m) {
     const p = m[1].split(',').map(x => parseFloat(x));
+    if (!Number.isFinite(p[0]) || !Number.isFinite(p[1]) || !Number.isFinite(p[2])) return null;
     return [p[0] | 0, p[1] | 0, p[2] | 0, p.length > 3 && Number.isFinite(p[3]) ? Math.max(0, Math.min(1, p[3])) : 1];
   }
   const nomi = { black: [0, 0, 0, 1], white: [255, 255, 255, 1], red: [255, 0, 0, 1],
                  lime: [0, 255, 0, 1], blue: [0, 0, 255, 1], transparent: [0, 0, 0, 0] };
-  return nomi[s.toLowerCase()] || [0, 0, 0, 1];
+  return nomi[s.toLowerCase()] || null;
+}
+
+/* Come il browser: un colore che non si capisce non cambia niente. Ma lo si conta. */
+function colValido(v, precedente) {
+  const c = colore(v);
+  if (c) return c;
+  colorìSballati.n++;
+  if (colorìSballati.esempi.length < 6 && typeof v === 'string') colorìSballati.esempi.push(v);
+  return precedente;
 }
 
 /* ---------- la tela ---------- */
@@ -229,7 +246,8 @@ class Contesto {
      sono: rettangoli trasformati e segmenti ispessiti), a supercampionamento 2×2. */
   _poligono(p, stile, rettOriginale) {
     const t = this.tela, W = t.width, H = t.height;
-    const col = colore(stile);
+    const col = colValido(stile, this._ultimoColore || [0, 0, 0, 1]);
+    if (col && !col.__gradiente) this._ultimoColore = col;
     const grad = col.__gradiente ? col : null;
     const alfaBase = (grad ? 1 : col[3]) * (Number.isFinite(this.globalAlpha) ? this.globalAlpha : 1);
     if (!grad && alfaBase <= 0) return;

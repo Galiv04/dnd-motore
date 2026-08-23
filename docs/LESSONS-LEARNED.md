@@ -1216,3 +1216,140 @@ un offset (`s.index(x, inizio)`), o con una stringa che si sa unica. La seconda,
 quella che mi ha salvato: **un test che verifica l'esistenza di ogni riferimento vale
 più di dieci test che verificano i contenuti**. Un controllo di integrità referenziale
 non trova mai difetti interessanti, e trova sempre i disastri.
+
+### 58. Prima di inventare, cercare: qualcuno l'ha già disegnato
+
+Il committente, dopo la quarta stesura di una macchina che non leggeva: «in generale ti
+direi di cercare sul web o in giro, è facile che trovi esempi e codice riutilizzabile e
+risparmiamo tempo e uso, senza che provi a fare tutto da zero».
+
+Ha ragione, e la prova è che una ricerca di trenta secondi mi ha dato le due misure che
+avevo sbagliato a occhio per tre stesure: **fra le due ruote di un'automobile normale ci
+stanno tre diametri di ruota** (quindi l'interasse è quattro diametri da centro a
+centro) e **l'altezza totale è circa due diametri**. Con quelle due proporzioni la
+sagoma viene giusta al primo colpo. E la convenzione della lamiera in pixel art —
+carrozzeria in tre fasce (alta più chiara perché ci si riflette il cielo, media il
+colore base, bassa più scura perché ci si riflette l'asfalto) più **un pixel chiaro sul
+filo di cintura**, dove la portiera incontra il vetro — è quella che trasforma una
+sagoma di cartone in metallo, ed è nota da trent'anni.
+
+La regola operativa: **quando si disegna una cosa che esiste nel mondo (un'automobile,
+una barca, un ombrellone, un pozzo), le proporzioni si cercano, non si stimano.** Vale
+anche per il codice: prima di scrivere un rasterizzatore, un encoder o un parser, mezzo
+minuto per vedere se esiste già. Il tempo speso a cercare è sempre meno di quello speso
+a ridisegnare quattro volte — e i miei quattro tentativi sono costati più di ogni ricerca
+possibile.
+
+### 59. Un fondale ha UN soggetto, non sette cose
+
+Tre stesure di una scena d'apertura, tutte respinte, e la terza con un giudizio che non
+lascia scampo: «non capisco assolutamente che cosa fa vedere l'immagine. Vedo tipo una
+strada, la spiaggia, e tipo delle scale senza senso da sole».
+
+Le «scale senza senso» erano pile di lettini da spiaggia larghe quaranta pixel. E il
+problema non era il disegno delle pile: era che nell'inquadratura c'erano **cielo, mare,
+spiaggia, tre lidi, un muretto, l'asfalto, una macchina e un borsone** — otto cose in
+960×360, ognuna troppo piccola per riconoscersi, e nessuna che facesse da soggetto.
+L'occhio non ha dove attaccarsi, e il cervello traduce ogni macchia in «qualcosa che non
+capisco».
+
+Rifatta con **un soggetto grande e inconfondibile** (la macchina di profilo col
+portellone alzato, 420 px su 960) più il minimo che dice dove siamo — mare, battigia,
+muretto — e un lampione tagliato dal bordo che dà la scala: cinque cose, tutte
+abbastanza grandi da leggersi. Si capisce al primo sguardo.
+
+La misura pratica: a 960×360, **un oggetto sotto i sessanta pixel di lato non comunica
+cosa è**, comunica solo che c'è. Quindi ogni fondale ha una gerarchia esplicita: un
+soggetto (un terzo dell'inquadratura o più), due o tre elementi di contesto grandi
+almeno cento pixel, e nient'altro. Il dettaglio piccolo si mette solo DENTRO il
+soggetto, dove il giocatore lo cerca.
+
+### 60. Un oggetto che non si riesce a far leggere si toglie
+
+Lo stesso fascio di ombrelloni chiusi l'ho disegnato tre volte: guglia, obelisco, e
+infine una lama pallida che spuntava da dietro la macchina. Alla quarta l'ho **tolto**, e
+la scena è migliorata più di quanto sarebbe migliorata con un fascio perfetto.
+
+Non è una resa: è la scelta giusta. Un elemento che non comunica occupa spazio, ruba
+attenzione al soggetto e aggiunge una macchia da interpretare. Se dopo due tentativi un
+oggetto non si riconosce, le domande sono due — *serve alla scena?* e *si può dire con
+qualcos'altro?* — e la risposta più spesso giusta è togliere. Vale per i fondali come per
+le meccaniche: la lezione 44 dice la stessa cosa sulle funzioni costruite e vuote.
+
+### 61. Guardare deve costare poco, o non si guarda
+
+Per mesi la verifica visiva è stata: commit, push, attendere la ricostruzione di Pages,
+ricaricare tutti gli asset con `{cache:'reload'}`, ricaricare la pagina, avviare una
+partita, arrivare alla scena, fare uno screenshot. **Otto passi e qualche minuto per
+guardare un'immagine.** Il risultato prevedibile è che non si guarda — e i difetti
+trovati in questa sessione (una fessura nera fra due case, una fascia mai dipinta
+nell'ultima schermata di un gioco, una boa larga come un uomo) erano tutti in scene
+«già verificate».
+
+Il committente l'ha detto meglio di me: «tutte queste utility per ispezionare la
+grafica, mettiamole nel motore: costano meno e fanno un lavoro di qualità».
+
+Ora ci sono `tools/tela.mjs` (un canvas 2D che disegna per davvero in Node, senza
+dipendenze) e `tools/fondali-in-png.mjs`: **un comando, e l'immagine è su disco.** La
+prima immagine resa così ha trovato in un colpo tre difetti che quattro screenshot su
+Pages non avevano fatto vedere. Più `tools/provino.html`, che mette tutti i fondali di un
+gioco in una pagina e si apre dal telefono.
+
+La lezione generale, che non riguarda la grafica: **quando un controllo di qualità è
+scomodo, il problema non è la disciplina di chi lo salta — è il controllo.** Prima di
+chiedersi «perché non guardo mai le immagini?», si conta quanti passi servono per
+guardarne una. Se sono più di due, la risposta è quella.
+
+### 62. Il quadro deve mostrare quello che il testo dice
+
+Due scene diverse, in due giochi diversi, con lo stesso difetto. Una si svolge a Scauri,
+sul lungomare di casa, all'alba: usava il fondale di una spiaggia di Ventotene al
+tramonto, con dentro lo scoglio che dà il nome a quella baia — posto sbagliato di
+centoventi chilometri, ora sbagliata di dodici, e un monumento che non c'entra, nel primo
+fotogramma che il giocatore vede. L'altra dice, testualmente: «la riconoscete dalla curva
+della baia, dalla montagna spaccata, dal punto esatto dove piantate l'ombrellone da dieci
+anni» — e nel quadro non c'erano né la curva, né la montagna, né niente da riconoscere.
+
+Il gioco chiedeva al giocatore di riconoscere un posto e non gliene mostrava nessuno.
+
+Il controllo è meccanico e va fatto sempre: **si legge il testo della scena, si segna
+ogni cosa che nomina, e si verifica che stia nel quadro.** Se il testo dice «la corda è
+tesa», nel quadro c'è una corda tesa. Se dice «la sabbia è scura e le sdraio sono ancora
+legate», ci sono. Un fondale riusato da un'altra scena è quasi sempre un fondale che
+contraddice il testo: costa niente controllarlo, e sono i difetti che il giocatore nota
+per primi, perché è lui che ha appena letto la frase.
+
+### 63. Il browser ti nasconde gli errori di colore, e li paghi altrove
+
+`shade(hex, f)` vuole un esadecimale. `mix(a, b, t)` restituisce `rgb(r,g,b)`. Quindi
+`shade(mix('#c8a058', '#9a7638', t), tono)` fa `parseInt('gb(200,160,88)', 16)` = **NaN**
+e produce la stringa `rgb(NaN,NaN,NaN)`.
+
+Nel browser questo non si vede **mai**: per specifica, un colore che il canvas non capisce
+viene ignorato e `fillStyle` resta quello di prima. Il risultato è una parete dipinta col
+colore dell'oggetto disegnato prima — sbagliato, ma plausibile, e quindi invisibile. Nel
+rasterizzatore, che all'inizio trattava NaN come zero, la stessa parete veniva **nera**: ed
+è così che il bug è venuto fuori, dopo essere stato in produzione senza che nessuno lo
+notasse.
+
+Due conclusioni. La prima, sul codice: due funzioni che parlano di colore e non parlano la
+stessa lingua sono una trappola — `shade` prende hex e ridà `rgb()`, quindi **non si può
+comporre con sé stessa né con `mix`**, e questo va scritto sopra le funzioni (fatto).
+La seconda, più importante, sugli strumenti: **un rasterizzatore che si comporta meglio del
+browser mente.** Ora `tela.mjs` fa esattamente quello che fa il canvas — ignora il colore
+non valido e tiene il precedente — ma li **conta** e li segnala. Un errore che l'ambiente
+di produzione perdona resta un errore, e serve uno strumento che non lo perdoni.
+
+### 64. Due misure che si contraddicono sono peggio di una misura sola
+
+Il rasterizzatore contava i pixel scoperti uno per uno; il validatore contava le macchie
+con un filtro di forma (almeno 700 pixel e spesse almeno 9). Su due giochi il primo
+segnalava «11.000 pixel scoperti» e il secondo taceva. Erano entrambi corretti: 11.000
+pixel sparsi su una cucitura di un pixel lungo la battigia, invisibili sullo schermo.
+
+Ma un allarme che si impara a ignorare è peggio di nessun allarme, e due strumenti che
+danno risposte diverse sulla stessa domanda si smettono di usare entrambi. Adesso usano lo
+stesso criterio e gli stessi numeri, scritti in un posto solo.
+
+La regola: **quando due controlli misurano la stessa cosa, uno dei due deve chiamare
+l'altro** — o, se non si può, la soglia va definita una volta e citata in entrambi.
