@@ -1353,3 +1353,66 @@ stesso criterio e gli stessi numeri, scritti in un posto solo.
 
 La regola: **quando due controlli misurano la stessa cosa, uno dei due deve chiamare
 l'altro** — o, se non si può, la soglia va definita una volta e citata in entrambi.
+
+### 65. Un audit con cinque paia d'occhi trova quello che il mio non trova
+
+Dopo avere scritto gli strumenti per rendere i fondali in PNG e dopo avere guardato «tutte» le
+scene, ho fatto girare un audit con un agente per gioco — rendere ogni fondale, guardarlo, leggere
+il testo delle scene che lo usano — e uno scettico per ogni difetto, con l'ordine di provare a
+smentirlo. Risultato: **115 difetti segnalati, 45 confermati**, di cui nove che rompono la scena.
+In cinque giochi che consideravo verificati.
+
+I tre peggiori dicono tutto:
+- In una rimessa, **la macchina è disegnata intera e parcheggiata** mentre tutte e quattro le scene
+  di quel luogo dicono «non è parcheggiata. È SMONTATA, il motore è appeso al muro come un trofeo
+  di caccia». La didascalia stessa si chiama «il motore in bacheca». La scena si smentisce nel
+  primo secondo, e c'era da mesi.
+- **Cinque porte larghe 125 px e alte 116** in una scena che si chiama «Il Corridoio delle Porte
+  Sbagliate»: rapporto 1,08 dove una porta vera è 0,41. Leggevano come cinque pensili da cucina. E
+  il difetto era nell'helper `door()`, quindi le stesse porte-armadietto stavano in altre due scene.
+- **La corona che dà il titolo al gioco**, nella scena del finale, alta 26 px in un quadro di 360.
+
+Le due lezioni. La prima: **il difetto di contraddizione fra testo e quadro non lo vede chi ha
+scritto entrambi** — la mia testa completava l'immagine con quello che sapeva della scena. Serve un
+occhio che legga il testo e guardi il quadro senza sapere cosa intendevo. La seconda, sul metodo:
+la fase di verifica scettica è quella che rende l'audit usabile. Su 115 segnalazioni, 70 sono state
+smontate («è una scelta di stile», «in partita è coperto dagli sprite», «il commento del painter
+dice che è voluto»): senza quel filtro avrei avuto una lista che non si legge e che si finisce per
+ignorare.
+
+### 66. Il nero valido: un bug che nessun controllo sui colori può vedere
+
+`shade(hex, f)` restituisce `rgb(r,g,b)`. E `blocks(...)` richiama `shade()` sul colore che riceve.
+Quindi `blocks(..., shade('#3a3a42', 1.06), ...)` fa `shade('rgb(58,58,66)')`, cioè
+`parseInt('gb(58,58,66)', 16)` = NaN, e `NaN >> 16 & 255` = **0**.
+
+Il risultato non è un colore invalido: è `rgb(0,0,0)`, un nero **perfettamente valido**. Il
+contatore dei colori sballati della lezione 63 non se ne accorge — non c'è niente di sballato — e il
+controllo sulle macchie scoperte nemmeno, perché quei pixel sono opachi. Erano ottomilatrecento
+pixel di nero pieno sotto il trono nella scena del finale di un gioco, e sembravano una voragine
+voluta.
+
+Tre conseguenze operative. **Una**: una funzione che trasforma un colore deve accettare i formati
+che essa stessa produce, o non si può comporre — e `blocks()` la compone, quindi il bug era
+inevitabile. La correzione giusta non è la chiamata: è `shade()` che impara a leggere `rgb(...)`, e
+sana tutti i punti insieme. **Due**: il nero pieno in un fondale è quasi sempre un colore calcolato
+male, e ora `fondali-in-png.mjs` lo segnala (come avviso: il nero voluto esiste — la stiva di un
+relitto a quarantacinque metri, dove la torcia entra e non torna indietro). **Tre**, la più
+generale: **ogni classe di bug che passa attraverso i controlli esistenti è un controllo che
+manca.** Quando ne trovi uno, la domanda non è «come lo aggiusto» ma «cosa non stavo guardando».
+
+### 67. L'alone quadrato: un helper sbagliato è un difetto ripetuto trenta volte
+
+In un gioco della serie `glow()` disegnava con `fillRect`: **ogni sorgente di luce aveva un alone
+rettangolare** — candele, torce, funghi luminosi, cristalli, il lampadario, la corona. Dieci
+painter, trenta chiamate, e dietro ogni luce un pannello più chiaro coi bordi netti che sembrava un
+quadro appeso al muro.
+
+Nessuno l'aveva mai segnalato perché un alone quadrato, visto una volta, non sembra un errore:
+sembra la palette del gioco. Si vede solo mettendo due giochi accanto — in un altro `glow()` usa
+`pixelEllipse` e le luci sono tonde.
+
+La regola che ne viene: **quando un difetto compare in molte scene dello stesso gioco, non è un
+difetto di quelle scene.** È un helper, ed è una fortuna: si corregge in un posto e migliorano
+trenta immagini. Vale il contrario come avvertimento — prima di correggere lo stesso difetto per la
+seconda volta in due painter diversi, si guarda se il codice comune è quello.

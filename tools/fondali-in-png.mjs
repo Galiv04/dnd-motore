@@ -8,7 +8,8 @@
      node ../dnd-motore/tools/fondali-in-png.mjs --solo scauri      uno solo
      node ../dnd-motore/tools/fondali-in-png.mjs --provino          un contatto unico
      node ../dnd-motore/tools/fondali-in-png.mjs --sfondo '#ff00ff' i buchi si vedono
-     node ../dnd-motore/tools/fondali-in-png.mjs --scala 2          il doppio, per i dettagli
+     node ../dnd-motore/tools/fondali-in-png.mjs --zoom 3           ingrandito 3x a pixel interi
+     node ../dnd-motore/tools/fondali-in-png.mjs --solo scauri --zona 300,240,220,120 --zoom 4
      node ../dnd-motore/tools/fondali-in-png.mjs --out cartella
      node ../dnd-motore/tools/fondali-in-png.mjs --pulisci          cancella i PNG e basta
 
@@ -38,11 +39,51 @@ const arg = (nome, def = null) => {
 
 const radice = resolve(arg('gioco', process.cwd()));
 const fuori = resolve(arg('out', '/tmp/fondali'));
-const scala = Number(arg('scala', 1)) || 1;
 const sfondo = arg('sfondo', null);
 const solo = arg('solo', null);
-const W = Math.round(Number(arg('largo', 960)) * scala);
-const H = Math.round(Number(arg('alto', 360)) * scala);
+/* La dimensione del canvas, che è quella del gioco. NON si usa per ingrandire: i painter
+   mescolano frazioni di W/H e misure in pixel assoluti (una macchina è larga 420 px, non
+   0,43 W), quindi rendere su un canvas doppio non raddoppia il disegno — lo rimpicciolisce
+   a metà dentro un quadro grande. Ci sono cascato subito dopo aver scritto il tool: ho
+   chiesto --scala 4 per guardare un dettaglio e mi sono ritrovato la macchina piccolissima
+   in mezzo al nulla. Per ingrandire c'è --zoom, che è un ingrandimento a pixel interi
+   (nearest neighbour) fatto DOPO il disegno, cioè quello che serve alla pixel art. */
+const W = Math.round(Number(arg('largo', 960)));
+const H = Math.round(Number(arg('alto', 360)));
+const zoom = Math.max(1, Math.round(Number(arg('zoom', 1)) || 1));
+/* --zona x,y,w,h ritaglia una finestra in coordinate del gioco, prima dello zoom: serve a
+   guardare un oggetto senza rendere e leggere tutta l'inquadratura. */
+const zona = (() => {
+  const z = arg('zona', null);
+  if (!z || z === true) return null;
+  const p = String(z).split(',').map(Number);
+  if (p.length !== 4 || p.some(n => !Number.isFinite(n))) {
+    console.error('❌ --zona vuole x,y,w,h in pixel del gioco, per esempio --zona 300,240,220,120');
+    process.exit(1);
+  }
+  return { x: p[0], y: p[1], w: p[2], h: p[3] };
+})();
+
+/* Ritaglio e ingrandimento a pixel interi. Niente interpolazione: un pixel diventa un
+   quadrato di zoom×zoom, che è l'unico ingrandimento onesto per un'immagine a pixel. */
+function ritagliaEIngrandisci(tela) {
+  const z = zona || { x: 0, y: 0, w: tela.width, h: tela.height };
+  const x0 = Math.max(0, Math.min(tela.width - 1, z.x));
+  const y0 = Math.max(0, Math.min(tela.height - 1, z.y));
+  const w = Math.max(1, Math.min(tela.width - x0, z.w));
+  const h = Math.max(1, Math.min(tela.height - y0, z.h));
+  if (!zona && zoom === 1) return tela;
+  const fuoriT = new Tela(w * zoom, h * zoom);
+  for (let y = 0; y < h * zoom; y++) {
+    const sy = y0 + Math.floor(y / zoom);
+    for (let x = 0; x < w * zoom; x++) {
+      const sx = x0 + Math.floor(x / zoom);
+      const a = (sy * tela.width + sx) * 4, b = (y * fuoriT.width + x) * 4;
+      for (let k = 0; k < 4; k++) fuoriT.px[b + k] = tela.px[a + k];
+    }
+  }
+  return fuoriT;
+}
 
 if (arg('pulisci')) {
   if (existsSync(fuori)) {
@@ -103,6 +144,24 @@ function macchieScoperte(tela, sogliaPixel = 700, latoMin = 9, soglia = 0.08) {
   return fuori.sort((a, b) => b.pixel - a.pixel);
 }
 
+/* IL NERO PIENO. Un fondale con una macchia di nero perfetto — (0,0,0) opaco — quasi sempre non e
+   una scelta: e un colore CALCOLATO male. Il caso che ha insegnato la lezione: blocks() richiama
+   shade() sul colore che riceve, e a una chiamata era stato passato shade('#3a3a42', f), cioe gia
+   'rgb(58,58,66)'; shade su quella stringa fa parseInt('gb(58,58,66)', 16) = NaN, e NaN>>16&255 = 0.
+   Risultato: rgb(0,0,0), un nero PERFETTAMENTE VALIDO che nessun controllo sui colori sballati puo
+   intercettare. Erano ottomilatrecento pixel sotto il trono del finale di un gioco, e sembravano
+   una voragine voluta. Il nero pieno voluto esiste (la stiva di un relitto a quarantacinque metri,
+   dove la torcia entra e non torna indietro), quindi qui e un avviso e non un errore: lo si guarda
+   e si decide. */
+function neroPieno(tela) {
+  const px = tela.px;
+  let n = 0;
+  for (let i = 0; i < tela.width * tela.height; i++) {
+    if (px[i * 4 + 3] > 0.9 && px[i * 4] < 0.5 && px[i * 4 + 1] < 0.5 && px[i * 4 + 2] < 0.5) n++;
+  }
+  return n;
+}
+
 const S = caricaScene();
 const nomi = Object.keys(S.painters).filter(n => solo ? n === solo : true);
 if (!nomi.length) { console.error(`❌ nessun fondale che si chiami "${solo}"`); process.exit(1); }
@@ -123,7 +182,7 @@ for (const nome of nomi) {
   try { tela = disegna(nome); }
   catch (e) { console.error(`❌ ${nome}: ${e.message}`); continue; }
   const file = join(fuori, `${nome}.png`);
-  writeFileSync(file, tela.png(sfondo));
+  writeFileSync(file, ritagliaEIngrandisci(tela).png(sfondo));
   /* Quanto di questo fondale il riquadro mostrerebbe nero. Non il conto grezzo dei
      pixel: le MACCHIE. La prima versione contava ogni pixel con alfa bassa e gridava
      al lupo per una cucitura di un pixel sulla battigia — 11.000 pixel sparsi su una
@@ -131,7 +190,7 @@ for (const nome of nomi) {
      Due misure che si contraddicono sono peggio di una misura sola: qui si usa lo
      stesso criterio del validatore, cioè macchie da almeno 700 px e spesse almeno 9. */
   const macchie = macchieScoperte(tela);
-  fatti.push({ nome, file, macchie });
+  fatti.push({ nome, file, macchie, nero: neroPieno(tela) });
 }
 
 if (arg('provino')) {
@@ -157,7 +216,10 @@ if (arg('provino')) {
   console.log(`✔ provino: ${file}  (${cols} colonne, ${fatti.length} fondali)`);
 }
 
-console.log(`✔ ${fatti.length} fondali in ${fuori}  (${W}×${H}${sfondo ? ', fondo ' + sfondo : ''})`);
+console.log(`✔ ${fatti.length} fondali in ${fuori}  (disegnati ${W}×${H}`
+  + (zona ? `, ritaglio ${zona.w}×${zona.h} da (${zona.x},${zona.y})` : '')
+  + (zoom > 1 ? `, ingranditi ${zoom}×` : '')
+  + (sfondo ? `, fondo ${sfondo}` : '') + ')');
 const sporchi = fatti.filter(f => f.macchie.length);
 if (sporchi.length) {
   console.log('\n⚠ fondali con macchie che il riquadro mostrerebbe nere:');
@@ -167,5 +229,10 @@ if (sporchi.length) {
   }
 } else {
   console.log('  nessuna macchia scoperta');
+}
+const neri = fatti.filter(f => f.nero > 500).sort((a, b) => b.nero - a.nero);
+if (neri.length) {
+  console.log('\n· nero pieno (0,0,0): guardalo, spesso e un colore calcolato male e non una scelta');
+  for (const f of neri) console.log(`   ${f.nome}: ${f.nero} px (${(f.nero / (W * H) * 100).toFixed(1)}%)`);
 }
 for (const f of fatti) console.log(`   ${f.file}`);
