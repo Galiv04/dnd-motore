@@ -914,3 +914,27 @@ isolante che serve solo a costruire altro non ha un secondo strato, e inventargl
 riempitivo — cioè il difetto che si stava cercando di correggere. Il retro va agli oggetti che
 portano una storia: la lista d'imbarco con un nome aggiunto a penna, il d20 comprato nel 2019 e mai
 tirato, la candela del motore ancora tiepida con la targhetta «Gruppo 2024».
+
+### 45. Un'esenzione in un controllo è un bug che si è deciso di non vedere
+
+Il validatore di tutti e cinque i giochi aveva già il controllo «questa scelta chiede un flag che
+nessuno imposta». In Corona la condizione era:
+
+```js
+if (c.requires?.flag && !knownFlags.has(c.requires.flag) && !/^[a-z]+_presente$/.test(...))
+```
+
+Quel `!/^[a-z]+_presente$/` è un'esenzione scritta per far passare il controllo invece di
+correggerne la causa. Sotto ci stava nascosta **un'intera scena** — `k_torvald`, «da cuoco a cuoco»
+con Monsieur Ragoût — chiusa dietro `torvald_presente`, un flag che nessuna scena e nessun modulo
+impostava mai. Scritta, testata dal grafo, e invisibile a chiunque abbia giocato.
+
+Le esenzioni erano cinque toppe diverse, e due copiate male: Zoom esentava `daniele_in_squadra`, che
+in Zoom non esiste — copia-incolla da Casa. Sostituite tutte da un controllo che invece di
+**esentare i nomi** va a **cercare dove i flag vengono impostati**, anche fuori da `campaign.js`
+(`js/misteri.js`, `js/crafting.js`, `js/engine.js`: `G.flags['x'] = …`). Zero esenzioni, e la
+vera causa risolta portando `requires.hero` anche in Corona.
+
+Quando un controllo dà fastidio ci sono due strade, e una sola è quella giusta: capire perché
+protesta. L'esenzione va scritta solo quando si può dire **per quale ragione strutturale** quel caso
+non è un errore — e allora è una regola, non una toppa.
