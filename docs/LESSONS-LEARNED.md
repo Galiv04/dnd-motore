@@ -989,3 +989,10 @@ rotto».
 Nota di merito ai test: hanno fallito **forte e in modo specifico** («finale atteso e_gemelli,
 trovato e_scambio», «scena u10b non attraversata»), che è esattamente quello che serve per capire
 in due minuti che il problema era il seme e non il contenuto.
+
+Corollario, pagato dieci minuti dopo: **sostituire un blocco porta via anche quello che c'era
+dentro.** Avevo rimpiazzato due righe di uno scenario con una `sequences`, poi ho capito che la
+sequenza non serviva e l'ho tolta — restando senza la chiave `c3: 'Al secondo anello'` che stava
+in quelle due righe. Il mistero della cella 47 ha smesso di chiudersi e la suite è diventata rossa
+per una cosa che avevo cancellato per sbaglio, non per una scelta di design. Prima di togliere una
+modifica, rileggere cosa aveva sostituito.
