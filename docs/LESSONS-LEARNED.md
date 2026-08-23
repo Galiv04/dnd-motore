@@ -1137,3 +1137,82 @@ recente — **linkava gli altri quattro giochi e non sé stesso.**
 Ora è la riga subito sotto il titolo in tutti e cinque, identica, e c'è un controllo nel validatore
 che fallisce se manca o se scende sotto la quinta riga. Le convenzioni che dipendono dalla
 disciplina si perdono; quelle che hanno un test rosso, no.
+
+### 55. Il fondo del riquadro è nero, e il nero non si vede
+
+Cercando un difetto grafico segnalato dal committente ne è venuto fuori un altro, di una
+classe che non avevo mai controllato: **zone di uno sfondo che nessuno copre.** Il
+riquadro della scena ha `background:#000`, quindi un pixel non dipinto non si vede come
+"mancante": si vede come **nero**. E il nero, in una scena, sembra sempre qualcosa.
+
+Tre casi, tutti rimasti in produzione per mesi in scene guardate più volte:
+
+- **Una fessura di 52×160** in mezzo al filare di case della piazza di Ventotene. Il
+  filare arrivava a `x = 0.50` e ripartiva da `0.62`, e il campanile che sta in mezzo è
+  più stretto del vuoto. Sullo schermo era una fessura nera alta mezza inquadratura, e
+  **sembrava un vicolo**.
+- **Una striscia di 292×9** fra la fine del mare (`H*0.56`) e il capo di banda di una
+  barca, che scende verso poppa fino a `H*0.60`: due profili con forme diverse
+  accostati, e nessuno che riempisse la differenza. Sembrava un'ombra.
+- **Una fascia di 495×105 nell'ULTIMA immagine di un gioco**: il cielo dell'epilogo si
+  fermava a `H*0.55`, il terreno cominciava a `H-56`, e in mezzo — dove la strada va
+  verso il sole che sorge, nella schermata che deve dire «è finita, ed è mattina» — non
+  dipingeva nessuno. Sembrava lontananza.
+
+E un secondo difetto della stessa famiglia, che si vede uguale: zone **dipinte ma non
+opache**. Una sfumatura fatta di righe alte un pixel appoggiate su coordinate
+**frazionarie** viene antialiasata dal canvas — un rettangolo alto un pixel su una `y`
+non intera non è un rettangolo alto un pixel, sono due righe mezze trasparenti. La
+copertura si fermava all'84% e il testo del Narratore si leggeva **attraverso la
+spiaggia**. Regola pratica: in un painter pixel-art ogni coordinata di una fascia larga
+va arrotondata, e sotto una sfumatura ci va sempre un fondo opaco.
+
+Ora c'è `tools/buchi-nei-fondali.mjs` (copiato in `tests/` di ogni gioco, perché la CI
+gira dentro il repo): un contesto finto che non conta le chiamate ma misura la
+**trasparenza residua** di ogni pixel, copertura frazionaria dei bordi compresa, e poi
+cerca col flood fill le macchie scoperte. Seicento millisecondi per ventuno fondali, e
+sta nel validatore.
+
+La lezione generale: **quando un difetto è "qualcosa che non c'è", l'occhio non lo
+trova.** Il nero in una scena notturna, una fessura fra due case, una fascia scura in
+fondo a una strada: il cervello li interpreta tutti come contenuto. Difetti di assenza
+si trovano solo misurando, e la misura giusta non è "ho disegnato lì?" ma "quel pixel è
+coperto?".
+
+### 56. Una regex sul sorgente non è l'elenco delle cose che esistono
+
+Il controllo nuovo sulle schede dei luoghi pretendeva una scheda per ogni fondale, e
+l'elenco dei fondali lo ricavava con una regex sul sorgente:
+`/^    ([a-z_0-9]+)\(ctx, W, H\) \{/gm`. Passava verde in tutti e cinque i giochi.
+
+Nove painter della serie si chiamano in **camelCase** — `salaDaPranzo`, `torreInterno`,
+`pianoProibito`, `albaRelais` — e quella regex pretende un nome tutto minuscolo. Quindi
+per nove scene il controllo non pretendeva niente, la scheda non c'era, e in quelle
+scene **il pulsante restava spento in silenzio**: esattamente il difetto che il
+controllo esisteva per impedire. Un test verde che non guardava un quinto del materiale.
+
+La correzione è di una riga: caricare il modulo in un contesto e leggere
+`Object.keys(Scenes.painters)`. Le chiavi vere, non quelle che una regex si aspetta.
+
+Regola: **quando esiste un modo di chiedere alla cosa stessa, non si indovina dal
+sorgente.** Una regex su del codice è un'euristica travestita da elenco, e il travestimento
+regge fino al primo nome che non avevi previsto — che nel mio caso era già in produzione
+da mesi. Corollario trovato per strada: lo stesso controllo, con l'elenco giusto, ha
+anche scoperto un fondale dipinto e **mai messo in scena** da nessuna scena.
+
+### 57. Un `index()` senza offset su un file grande è una cancellazione che aspetta
+
+Modificando un painter con uno script Python ho cercato il punto in cui tagliare così:
+`s.index("      for (let i = 0; i < 190; i++) {")`. Quella firma di ciclo esisteva
+**anche mille righe prima**, in un altro painter. Il taglio è partito da là e ha
+cancellato **nove fondali** in un colpo.
+
+L'ha visto il validatore, che per ogni `location` di ogni scena controlla che il painter
+esista: nove FAIL in fila, «disegnerebbe lo sfondo di fallback». Ripristinato da git in
+dieci secondi.
+
+Due regole. La prima: in un file di tremila righe, **ogni ricerca va ancorata** — o con
+un offset (`s.index(x, inizio)`), o con una stringa che si sa unica. La seconda, che è
+quella che mi ha salvato: **un test che verifica l'esistenza di ogni riferimento vale
+più di dieci test che verificano i contenuti**. Un controllo di integrità referenziale
+non trova mai difetti interessanti, e trova sempre i disastri.
