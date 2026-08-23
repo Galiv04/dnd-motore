@@ -996,3 +996,25 @@ sequenza non serviva e l'ho tolta — restando senza la chiave `c3: 'Al secondo 
 in quelle due righe. Il mistero della cella 47 ha smesso di chiudersi e la suite è diventata rossa
 per una cosa che avevo cancellato per sbaglio, non per una scelta di design. Prima di togliere una
 modifica, rileggere cosa aveva sostituito.
+
+### 48. Un'opzione del banco di prova che non ha effetto è indistinguibile da un contenuto che non esiste
+
+Inseguendo tre contenuti che nessuno scenario attraversava, ho trovato tre modi diversi di scrivere
+un test che sembra provare una cosa e non prova niente — e tutti e tre erano **verdi**.
+
+1. **L'opzione buttata via.** Il ciclo di gioco del Relais legge `scenario.minigames` per forzare
+   l'esito di un minigioco, ma la funzione `scenario()` non inoltrava quel campo: lo scenario
+   «valzer perso» vinceva il valzer come tutti gli altri, e `u3_ninna` — che sta sull'uscita di
+   **fallimento** — restava irraggiungibile. Quando si aggiunge un'opzione a `scenario()`, si
+   verifica che arrivi davvero al ciclo di gioco.
+2. **Il tiro che non avviene.** In Casa forzavo `checkOutcomes: { k8: 'fail' }` mentre le scelte
+   base, a quella scena, prendevano «Lasciar stare» — che non tira nessun dado. Forzare l'esito di
+   un tiro che non si tira non fa niente: prima si sceglie la strada che il dado lo tira.
+3. **Il dado che decide al posto tuo.** In Corona la radura dei funghi sta oltre una prova di
+   Saggezza CD 11, tentata con eroi da SAG +1 e +0: il seme la faceva fallire e lo scenario finiva
+   altrove. Serviva `executeUntil` (che ritenta con semi diversi finché il bersaglio non è
+   raggiunto) e un eroe con SAG +4.
+
+La contromisura è sempre la stessa: **ogni scenario nuovo dichiara nel suo `verify` la scena che
+deve aver visitato.** Se l'opzione non funziona, il test diventa rosso subito e dice quale scena
+manca, invece di passare in silenzio per mesi.
