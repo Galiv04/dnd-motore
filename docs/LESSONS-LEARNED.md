@@ -787,3 +787,41 @@ if (peggio && peggio[1] > 3) throw new Error(`LOOP DI CHECKPOINT: ${peggio[1]} r
 Il messaggio adesso **nomina lo scontro**, che è la differenza fra un errore da leggere e un errore
 da indagare. La regola generale: quando una soglia misura «troppe volte», chiedersi sempre *troppe
 volte **dove***. Un contatore globale su una storia lunga produce falsi positivi garantiti.
+
+### 37. Quando una misura diretta e una per procura litigano, vince quella diretta
+
+Il Relais aveva **due** controlli sull'economia, scritti in momenti diversi, e si contraddicevano:
+
+- sul **grafo**: «al massimo 110 punti distribuiti in tutta la campagna, perché una partita ne vede
+  circa il 40%»;
+- nelle **partite simulate**: «il raccolto mediano di una notte di lunghezza umana deve stare fra
+  12 e 34, cioè 3-4 secondi tentativi».
+
+Tagliando i punti per rispettare il tetto (258 → 78) il raccolto mediano è crollato a **5**: due
+ritiri in tutta la notte, cioè di nuovo una valuta che non si usa. L'assunzione del 40% era sbagliata
+di un fattore tre — la percorrenza reale di una notte è più vicina al **10-15%**, perché i punti
+stanno anche sui rami che una partita non attraversa.
+
+Il tetto sul grafo è una **procura**: stima quello che il giocatore riceverà. Il raccolto mediano è
+la **misura diretta**: è quello che il giocatore riceve davvero, contato su partite vere. Quando le
+due litigano, si aggiusta la procura, non la realtà. Tetto portato a 200 con il perché scritto
+accanto, e la fascia 12-34 lasciata a fare da vero guardiano.
+
+Corollario sul **dove** rimettere i punti: non a caso e non «un po' su tutto». In Relais sono tornati
+sui **76 momenti umani** — le scene il cui testo parla di mangiare, bere, il caffè, i taralli, una
+risata, dormire, sedersi, tenersi per mano, respirare. Un filtro sul *testo*, non sulla struttura, e
+il risultato è che l'economia insegna il tema del gioco invece di contraddirlo.
+
+### 38. Chi porta compagni colpisce più piano
+
+L'ultimo loop di checkpoint del Relais non era un boss: era `cuoco + cameriere + cameriere`, tre
+nemici per **20 danni potenziali al round** contro eroi da 22 PV. Un eroe cadeva in poco più di un
+round, e il gruppo rimbalzava sul checkpoint anche con la pietà al massimo.
+
+La regola della 27 va estesa: **il danno di un nemico non si giudica da solo, si giudica nella
+compagnia in cui compare.** Un nemico da 5,5 danni è mite; tre insieme fanno 16,5 e uccidono. Il
+validatore somma il danno di tutti i nemici di ogni scena e avvisa quando supera metà dei PV
+dell'eroe più fragile — e quell'avviso va guardato, non archiviato: era già lì, e l'ho lasciato
+passare come «informativo» finché non è diventato un loop.
+
+Ritarati: cuoco 9,0 → 6,5 e cameriere 5,5 → 4,5, gruppo da 20 → 15,5.
