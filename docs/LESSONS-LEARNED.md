@@ -966,3 +966,26 @@ che il gioco stesso smentisce si toglie, e si scrive accanto perché.
 Ultima cosa, imparata subito dopo: **contenuto aggiunto e non attraversato da nessun test è
 contenuto non finito.** L'imboscata dei banditi ha girato per 48 partite simulate senza che nessuna
 la incontrasse. Ogni scena nuova si accompagna con lo scenario che la gioca.
+
+### 47. Gli scenari nuovi vanno in coda, sempre
+
+In tutte le suite i semi si assegnano con un contatore progressivo:
+
+```js
+let seedCounter = 1;
+function nextSeed() { return seedCounter++ * 104729; }
+```
+
+Ho inserito uno scenario nuovo **in testa** alla lista di Casa e due scenari che passavano da
+mesi hanno cominciato a fallire — non perché il gioco fosse cambiato, ma perché ogni scenario dopo
+il mio aveva preso il seme del precedente, e con un altro seme i dadi cadono diversi. Dieci minuti
+buttati a cercare una regressione che non esisteva.
+
+Uno scenario nuovo si aggiunge **in fondo**, o gli si dà un seme esplicito (`{ seed: 424242 }`). E
+se serve davvero metterlo in mezzo, si mette il seme esplicito a lui e a tutti quelli che seguono,
+oppure si accetta di rileggere i fallimenti come «i dadi sono cambiati», non come «il gioco si è
+rotto».
+
+Nota di merito ai test: hanno fallito **forte e in modo specifico** («finale atteso e_gemelli,
+trovato e_scambio», «scena u10b non attraversata»), che è esattamente quello che serve per capire
+in due minuti che il problema era il seme e non il contenuto.
