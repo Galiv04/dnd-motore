@@ -1040,3 +1040,100 @@ retro di tre oggetti. È dieci righe di test e copre nove schermate.
 La regola generale: **se una funzione può essere chiamata da un bottone, un test deve chiamarla.**
 Non serve verificare cosa disegna — basta che non esploda. Il 90% del valore di questo controllo sta
 nel fatto che gira, non in cosa afferma.
+
+### 50. Un helper le cui unità non sono ovvie diventa un errore ripetuto
+
+`glow(ctx, x, y, w, h, rgb)` disegna quattro ellissi concentriche: l'anello più esterno ha semiassi
+`w * 2` e `h * 2`. Cioè **l'alone finito è larghezza `4w`, non `w`.** In un painter avevo scritto
+`glow(..., iw * 0.40, ih * 1.05, ...)` pensando «un alone grande quanto il paese» e ottenendo un
+alone di **612 pixel su un canvas di 480**: schiariva mezzo cielo e tingeva d'ocra l'intera isola.
+La cosa peggiore è che *sembrava una scelta* — un'isola calda al chiaro di luna — e per settimane
+nessuno l'ha letta come bug. La luna, nello stesso painter, ne aveva uno di 280.
+
+Facendo l'inventario di tutte le chiamate nei cinque giochi: sette erano oltre la larghezza del
+canvas. Una lampadina in una cisterna con un alone di 680×520; il sole di Cala Nave 760×520; una
+breccia di venti centimetri con 864×598; una **singola tacca** su un muro con 296×248.
+
+Due lezioni. La prima: quando un helper prende misure, il commento sopra deve dire **in che unità**,
+e se il risultato è un multiplo del parametro va detto in maiuscolo. La seconda, più generale:
+**un valore passato come frazione di `W` o `H` a una funzione che si aspetta pixel è un errore che
+non si vede mai** — perché il risultato è comunque *qualcosa*, e qualcosa di plausibile.
+
+### 51. In prospettiva, il metro sono le persone
+
+Il committente, guardando Cala Nave: «la boa gialla, va bene vederla, ma è molto molto grande».
+Aveva ragione, e non era un'impressione: era misurabile. La boa era larga 30 pixel; i bagnanti che
+le nuotavano intorno, più vicini di lei all'osservatore, erano alti 30. Una boa da segnalazione è
+larga settanta centimetri e una persona è alta un metro e settanta: la boa doveva stare a **nove**
+pixel. Stessa scena, stesso errore: gli ombrelloni avevano la calotta larga 124 px dove una persona
+alla loro distanza ne era alta 50 — quattro metri di ombrellone.
+
+Il metodo: in ogni scena con delle figure umane, **la persona è il metro**. Si prende la figura più
+vicina all'oggetto sospetto, si converte in metri (altezza / 1.7), e si controlla che l'oggetto stia
+nella sua misura vera. Non serve la trigonometria: serve una divisione. E dove non ci sono persone,
+il metro è la cosa di cui si conosce la dimensione — un gradino è 17 cm, una porta 2 m, un tavolino
+da bar 70 cm.
+
+Corollario che mi è costato la stessa scena due volte: gli oggetti **più lontani vanno disegnati
+più piccoli anche quando sono importanti**. La tentazione è ingrandire quello che il giocatore deve
+notare. Ma un oggetto fuori scala non si legge come «importante»: si legge come «sbagliato», e la
+scena perde credibilità invece di guadagnare enfasi. Per far notare una cosa piccola si usa il
+contrasto o il colore, non la taglia.
+
+### 52. Il file generato modificato a mano è una perdita a scoppio ritardato
+
+La pipeline dice: `drafts/*.js` → `node tests/assemble.mjs` → `js/campaign.js`, e **il generato non
+si edita**. In un repo la regola era stata violata in silenzio: tre schede di oggetti (`lore`)
+scritte direttamente nel generato. Tutto funzionava. Poi, mesi dopo, un assemble lanciato per una
+modifica a tre battute di dialogo ha **cancellato le tre schede**, e il gioco è passato da 12 oggetti
+con la scheda a 6 — scoperto per puro caso dal validatore, che aveva una soglia sul 50%.
+
+La guardia che c'era contava le **scene**: i draft ne producevano quante il file ne aveva, quindi
+passava. Non guardava i campi. Ora `assemble.mjs` confronta anche la ciccia — quante occorrenze di
+`lore:`, `combat:`, `requires:`, `sets:`, `caption:` … c'erano prima e quante dopo, più un tetto
+dello 0,5% sui caratteri persi — e si rifiuta di scrivere se qualcosa cala, a meno di `--force`.
+
+Ma la cosa che serviva davvero è il **rovescio**: `assemble.mjs --check`, che non scrive niente e
+dice se il file sul disco corrisponde ai draft. Girando nel validatore, trasforma «qualcuno ha
+editato il generato» da bomba a orologeria in un test rosso lo stesso giorno.
+
+Regola: **ogni pipeline che genera un file deve avere una modalità che verifica il file invece di
+riscriverlo**, e quella modalità va messa nella suite. Altrimenti la sincronia fra sorgente e
+generato è affidata alla memoria di chi lavora.
+
+### 53. Un difetto di ritratto non si vede in una scena: si vede contando
+
+Il committente, sui giochi in cui compare il suo personaggio: le sue battute sono «un po' troppo da
+ingegnere nerd, analitico o sociopatico, che non è esattamente come sono io». Aprendo una scena
+qualunque non si vedeva niente di sbagliato: la battuta che analizza, da sola, è simpatica e
+caratterizzante. Il difetto stava nella **somma** — 630 battute in quattro giochi, e quasi nessuna
+in cui proponesse qualcosa, trascinasse qualcuno fuori, si buttasse per primo. Metà del personaggio
+(quello alla mano, avventuroso, che tira il gruppo verso le cose nuove) era semplicemente assente.
+
+Contarle a mano è impossibile; il primo contatore che ho scritto era inutile (metteva il 93% delle
+battute in «altro»). Quello che ha funzionato è cercare il **registro** invece del contenuto: le spie
+del rapporto d'incidente — `Analisi:`, `Registrato.`, `Stato:`, `Azione correttiva`, `Ricapitolo`,
+`da ingegnere`, `variabile`, `parametro`. Ventuno battute su 630, concentrate in un gioco solo, che
+in quattro casi si annunciavano da sé («Parlo da ingegnere», «Ricapitolo da ingegnere»). Una persona
+vera non annuncia la propria professione prima di ogni pensiero.
+
+La correzione non era togliere l'analisi — è sua, ed è spesso portante per gli enigmi — ma
+**invertire l'ordine**: prima il movimento o la persona, poi l'intuizione, detta per entusiasmo e
+non per correggere qualcuno. «Parlo da ingegnere: questa calata è oltre i margini di sicurezza» è
+diventato «questa calata è oltre qualunque margine, quindi scendo io per primo e da sotto vi dico
+cosa c'è». Stessa informazione, stesso personaggio, altro uomo.
+
+Il tool sta in `tools/voce-di-gaetano.mjs`, ed è generalizzabile a qualunque personaggio: si cambia
+il nome e l'elenco delle spie di registro.
+
+### 54. Il link per giocare va in cima al README, non da qualche parte nel README
+
+«Nei README delle varie repo ci deve sempre essere il link a Pages, perché da mobile altrimenti non
+lo riesco a trovare facilmente.» Da telefono la scheda di una repo mostra il README e **non** il
+pannello di destra con il link al sito: se l'URL non sta nelle prime righe, il gioco è irraggiungibile
+per chi arriva dal telefono. Su cinque repo: due lo avevano in cima, due sepolto, e uno — il più
+recente — **linkava gli altri quattro giochi e non sé stesso.**
+
+Ora è la riga subito sotto il titolo in tutti e cinque, identica, e c'è un controllo nel validatore
+che fallisce se manca o se scende sotto la quinta riga. Le convenzioni che dipendono dalla
+disciplina si perdono; quelle che hanno un test rosso, no.
