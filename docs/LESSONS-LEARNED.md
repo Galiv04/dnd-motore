@@ -938,3 +938,31 @@ vera causa risolta portando `requires.hero` anche in Corona.
 Quando un controllo dà fastidio ci sono due strade, e una sola è quella giusta: capire perché
 protesta. L'esenzione va scritta solo quando si può dire **per quale ragione strutturale** quel caso
 non è un errore — e allora è una regola, non una toppa.
+
+### 46. Fare l'inventario di quello che nessuno può incontrare
+
+Una passata sistematica su tutti e cinque i giochi — «cosa esiste nei dati e non è raggiungibile
+dal gioco?» — ha trovato in un pomeriggio:
+
+- **una scena intera** (Corona, `k_torvald`) dietro un flag mai impostato;
+- **un oggetto** definito e descritto e mai dato a nessuno (il coltello di Ragoût, il cui stesso
+  retro promette «se glielo chiedete ve lo dà»);
+- **quattro nemici** con scheda, sprite e attacco che nessuna scena faceva comparire (Corona:
+  bandito; Pandataria: murena, annegata, polpo);
+- **due reazioni in combattimento** già scritte — «se c'è Ciro contro la murena», «se c'è Claudia
+  contro l'annegata» — che non potevano scattare perché quei nemici non comparivano mai.
+
+Le tre domande da fare a ogni gioco, e che stanno in `tools/`:
+1. quale `requires.flag` non è impostato da nessuna scena **né da nessun modulo**?
+2. quale oggetto di `ITEMS` non è dato da nessuna scena, ricetta, minigioco o inventario iniziale?
+3. quale voce di `BESTIARY` non compare in nessun `combat.enemies`?
+
+E la regola per il risultato: **o si rende raggiungibile, o si toglie.** Non tutto va reso
+raggiungibile: il POLPO di Pandataria è stato eliminato perché il gioco ha già un polpo — quello di
+Cala Nave che guarda Claudia «con quell'occhio orizzontale e decide che non vale la pena spostarsi»
+— e farne un mostro con «otto braccia e un becco» contraddiceva la sua scena migliore. Una creatura
+che il gioco stesso smentisce si toglie, e si scrive accanto perché.
+
+Ultima cosa, imparata subito dopo: **contenuto aggiunto e non attraversato da nessun test è
+contenuto non finito.** L'imboscata dei banditi ha girato per 48 partite simulate senza che nessuna
+la incontrasse. Ogni scena nuova si accompagna con lo scenario che la gioca.
