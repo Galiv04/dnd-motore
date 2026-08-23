@@ -669,3 +669,34 @@ Due lezioni dentro una:
 
 Corollario da applicare subito: le altre modali (zaino, crafting, Quaderno, mappa, bestiario,
 diario, menu) meritano la stessa prova. Se una schermata si apre con un click, un test deve cliccarla.
+
+### 33. `justify-content: center` su un flex che sfora spinge il contenuto fuori dallo scroll
+
+Segnalazione del committente, in cinque parole: *«la schermata iniziale del gioco è tutta sbagliata
+e a sinistra»*. Guardando, non era spostata a sinistra: era **spostata in alto e non raggiungibile**.
+
+`#screen-title.active { justify-content: center }` su un contenitore `min-height: 100vh` centra il
+contenuto verticalmente — ma quando il contenuto è **più alto** dello schermo, il centraggio lo
+spinge sopra l'origine dello scroll, dove non si può scorrere. Il risultato: un rettangolo vuoto in
+cima alla pagina e mezzo titolo tagliato. È un comportamento noto dei flexbox e succedeva su tutti
+e cinque i giochi; con l'incipit aggiunto (che alza il contenuto) si vedeva ancora meglio.
+
+```css
+#screen-title.active {
+  justify-content: safe center;   /* centra se c'è spazio, flex-start se non c'è */
+  padding-block: 18px;
+}
+@supports not (justify-content: safe center) {
+  #screen-title.active { justify-content: flex-start; }
+}
+```
+
+Due regole che ne seguono, per qualunque schermata:
+
+1. **Il pulsante principale sta sopra la piega, sempre.** Si verifica in una riga:
+   `document.getElementById('btn-new-game').getBoundingClientRect().bottom <= innerHeight`.
+   Con l'incipit sopra i bottoni, in Pandataria quel bottone stava a 943 px su una finestra alta
+   720: l'incipit è finito **sotto** i bottoni, dove non copre la porta d'ingresso.
+2. **Le misure prese col pannello del browser nascosto sono spazzatura**: `innerWidth`/`innerHeight`
+   tornano 0 e ogni `getBoundingClientRect` mente. Prima di misurare, portare la scheda in primo
+   piano — o si passa mezz'ora a inseguire difetti che non esistono (mi è capitato due volte).
