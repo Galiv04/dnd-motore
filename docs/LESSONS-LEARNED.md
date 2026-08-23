@@ -618,3 +618,26 @@ browser una griglia che chiama ogni painter su un canvas 960×360 e li impagina 
 miniatura si giudica la composizione; a dimensione vera si giudica il dettaglio. La `cella 47`
 sembrava vuota nella miniatura e a 960 px aveva tutte e ottomilaquarantuno le tacche in gruppi di
 cinque: **le due scale servono entrambe**.
+
+### 31. Un indicatore fuori dallo schermo è un indicatore che non esiste
+
+Il difetto più grave trovato guardando Pandataria sul sito vero, e il più invisibile ai test:
+durante il minigioco dell'**apnea** la barra del fiato stava a **812 px** su una finestra alta
+**720**. Fuori dallo schermo. Chi giocava non vedeva né quanto fiato gli restava né a che profondità
+era — e senza quei due numeri l'apnea non è una meccanica, è un tasto da tenere premuto a caso.
+
+La causa è banale e generale: `.minigame-canvas { width: 100% }` su un canvas 960×320 dentro un box
+larga 1000 px lo rende alto **557 px**, e tutto quello che sta sotto (barra, HUD, bottoni) finisce
+sotto la piega. Nessun test lo vede: il DOM è lì, i valori sono giusti, la partita simulata passa.
+
+Due rimedi, entrambi necessari:
+
+1. **I numeri che servono MENTRE giochi si disegnano dentro il canvas**, non sotto. Il canvas è
+   l'unica cosa che sicuramente stai guardando. La HUD HTML resta, come ridondanza.
+2. **`max-height` in vh sul canvas**, a scaglioni (`52vh`, poi `44vh` sotto 780 px di altezza,
+   `38vh` sotto 620), con `object-fit: contain`. Larghezza al 100% senza un tetto in altezza è una
+   trappola su qualunque finestra bassa — e i portatili sono finestre basse.
+
+Regola generale, che vale oltre i minigiochi: **per ogni informazione che il giocatore deve leggere
+mentre agisce, misurare `getBoundingClientRect().bottom <= innerHeight`.** È una riga di JavaScript
+nel browser e trova in un secondo quello che nessun test statico può vedere.
