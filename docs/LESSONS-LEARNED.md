@@ -641,3 +641,31 @@ Due rimedi, entrambi necessari:
 Regola generale, che vale oltre i minigiochi: **per ogni informazione che il giocatore deve leggere
 mentre agisce, misurare `getBoundingClientRect().bottom <= innerHeight`.** È una riga di JavaScript
 nel browser e trova in un secondo quello che nessun test statico può vedere.
+
+### 32. La schermata che nessun test apre è quella che si rompe
+
+`Engine.showHeroSheetIdx(1)` → `ReferenceError: conditions is not defined`. La scheda del
+personaggio — quella che il committente aveva chiesto **espressamente** dopo aver giocato
+(«siamo avvelenati ma se clicchi il personaggio non si vede e non dà info al riguardo») —
+esplodeva a ogni click, in tre giochi su cinque, e il blocco delle condizioni non era mai stato
+mostrato a nessuno.
+
+La causa è una patch messa nel posto sbagliato: `const conditions = [...]` era finita **dentro** il
+ciclo `h.abilities.map(...)`, dove nasceva e moriva a ogni abilità, mentre il template in fondo alla
+funzione la cercava al livello della funzione. `node --check` passa (è JS valido), il validatore
+passa (non esegue l'interfaccia), le partite simulate passano — **perché nessuna partita simulata
+clicca su un eroe.**
+
+Due lezioni dentro una:
+
+1. **Quando si applica la stessa patch a N repo, si verifica in N repo.** Qui il primo (relais) era
+   giusto e i tre successivi no: il punto d'inserzione dello script cadeva dentro una closure.
+   Un `node --check` non basta: serve *eseguire* la funzione toccata.
+2. **Ogni schermata che il giocatore può aprire deve avere una prova che la apre.** La prova aggiunta
+   ora in tutti e cinque i giochi apre la scheda di ogni eroe in **otto combinazioni di stati** e
+   verifica che l'HTML non esploda, non sia vuoto, non contenga `undefined`/`NaN`, e che ogni stato
+   produca il blocco «Condizioni attive». Costa venti righe e copre la classe di bug che i test di
+   percorso non possono vedere per costruzione.
+
+Corollario da applicare subito: le altre modali (zaino, crafting, Quaderno, mappa, bestiario,
+diario, menu) meritano la stessa prova. Se una schermata si apre con un click, un test deve cliccarla.
