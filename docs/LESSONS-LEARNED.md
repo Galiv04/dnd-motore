@@ -755,3 +755,35 @@ più fragile regge 4 colpi in tutti e cinque i giochi e i boss restano da 35-81 
 La lezione oltre i numeri: **un difetto che si presenta sempre travestito non viene trovato
 giocando, viene trovato misurando.** Le tre righe di aritmetica che lo scoprono valgono più di
 qualunque quantità di ore di test manuale — e vanno nel validatore, dove nessuno se le dimentica.
+
+### 36. La pietà e il guardiano si contano PER SCONTRO, non a vita
+
+Correzione alla 34, sbagliata nella prima stesura e scoperta dai test stessi — che è il modo giusto
+di scoprirla. Avevo contato i ritorni dal checkpoint **a vita**: `G.stats.checkpointRitorni`, e il
+guardiano del test falliva sopra i quattro. In una notte del Relais da **180 scene e 40
+combattimenti**, cadere cinque volte in punti diversi è **normale**: sei partite pilotate sono
+fallite con «LOOP DI CHECKPOINT» senza avere nessun loop.
+
+E il difetto era doppio, perché anche la pietà era sbagliata nello stesso modo: contata a vita,
+dopo tre cadute sparse regalava il 34% di sconto a **tutti** gli scontri successivi, compresi quelli
+che il gruppo avrebbe vinto lo stesso.
+
+Il conto giusto è **per scontro**:
+
+```js
+const scontro = G.lastCombatSceneId || G.sceneId || '?';
+G.stats.ritorniPerScontro[scontro] = (G.stats.ritorniPerScontro[scontro] || 0) + 1;
+G.pieta = Math.min(0.34, G.stats.ritorniPerScontro[scontro] * 0.12);
+// il conteggio a vita resta, ma serve solo alle imprese
+```
+
+E il guardiano guarda il **massimo per scontro**, non la somma:
+
+```js
+const peggio = Object.entries(G.stats.ritorniPerScontro).sort((a,b) => b[1]-a[1])[0];
+if (peggio && peggio[1] > 3) throw new Error(`LOOP DI CHECKPOINT: ${peggio[1]} ritorni sullo STESSO scontro ("${peggio[0]}")`);
+```
+
+Il messaggio adesso **nomina lo scontro**, che è la differenza fra un errore da leggere e un errore
+da indagare. La regola generale: quando una soglia misura «troppe volte», chiedersi sempre *troppe
+volte **dove***. Un contatore globale su una storia lunga produce falsi positivi garantiti.
