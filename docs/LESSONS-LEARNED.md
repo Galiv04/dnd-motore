@@ -825,3 +825,55 @@ dell'eroe più fragile — e quell'avviso va guardato, non archiviato: era già 
 passare come «informativo» finché non è diventato un loop.
 
 Ritarati: cuoco 9,0 → 6,5 e cameriere 5,5 → 4,5, gruppo da 20 → 15,5.
+
+### 39. Chi ruba vita deve essere colpibile
+
+Lo scontro finale del Relais era `gregorio + cameriere + cameriere`: 85 PV, 14,5 danni al round e —
+il dettaglio che lo rendeva invincibile — **ruba vita** su un boss con CA 16. La CA alta allunga lo
+scontro perché il gruppo manca; il furto di vita lo allunga di nuovo perché disfa i colpi che vanno
+a bersaglio; e ogni round in più è danno incassato. Le tre cose insieme non si sommano, si
+moltiplicano.
+
+Quando un boss ha una capacità che **allunga** lo scontro (furto di vita, cura, rigenerazione,
+richiamo di rinforzi), la sua CA va **abbassata**, non alzata: uno scontro lungo deve essere uno
+scontro in cui i colpi arrivano. E i comprimari accanto a lui devono morire nel primo giro, così il
+danno del gruppo crolla invece di restare piatto per dieci round. Ritarati: gregorio CA 16 → 14,
+cameriere 15 → 10 PV.
+
+### 40. L'HUD orienta, la didascalia commenta
+
+Per cinque giochi la stessa frase è stata stampata due volte a duecento pixel di distanza: nella
+barra in alto e sotto il quadro. Nessun test poteva accorgersene — erano entrambe «presenti e
+giuste». L'ho visto in uno screenshot.
+
+Le didascalie sono scritte come `Luogo, ora — frase`. Il taglio naturale è quello: **il luogo e
+l'ora vanno nell'HUD** (a cosa serve un HUD se non a sapere dove sei), **la frase sotto il quadro**
+(è la didascalia di un'immagine, deve dire cosa stai guardando). Senza trattino lungo l'HUD prende
+tutto e la didascalia sotto si nasconde. Due righe, due lavori diversi, zero ripetizioni.
+
+### 41. Una finta DOM che diverge dal browser nasconde i bug
+
+Nella finta DOM dei test `classList.toggle(c)` ignorava il secondo argomento. Nel browser
+`toggle('hidden', false)` **rimuove**; nella finta DOM, con la classe assente, **aggiungeva**. Un
+test verde su un comportamento invertito.
+
+Ogni scorciatoia nella finta DOM è un punto in cui i test smettono di parlare del programma vero.
+Quando si aggiunge un metodo va implementato con la firma completa, o va fatto lanciare un errore
+sugli argomenti che non gestisce — mai fallire in silenzio in una direzione plausibile.
+
+### 42. Una correzione grafica va misurata, non guardata
+
+Il sottotitolo del titolo lasciava una parola sola sull'ultima riga. Ho aggiunto
+`max-width: 30ch` e `text-wrap: balance` e sarei passato oltre chiamandola una correzione.
+Misurando i rettangoli di riga sul sito vero: **30ch è più stretto del testo e AGGIUNGE una riga** —
+quattro invece di tre sul telefono, cinque invece di due sul desktop. Il bilanciamento, da solo, non
+cambiava niente. Avrei pubblicato un peggioramento con la descrizione di un miglioramento.
+
+Per ogni modifica a un layout va misurato **il numero di righe, la larghezza e la posizione prima e
+dopo**, sullo schermo vero e a due larghezze di finestra (`getClientRects()` sul contenuto dà le
+righe una per una). Uno screenshot dice se una cosa è brutta; solo la misura dice se è migliorata.
+
+Stessa disciplina ha evitato una correzione inutile: sembrava che entrando in combattimento la
+pagina restasse a metà. Misurato: al cambio di scena il documento si accorcia e il browser riporta
+lo scorrimento a zero da sé. Non c'era niente da correggere, e aggiungere uno `scrollTo` avrebbe
+solo aggiunto codice da mantenere.
