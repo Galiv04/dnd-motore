@@ -895,3 +895,22 @@ collaterale dà i **punti vita esatti** — cosa che una barra di 3px non ha mai
 Prima di scrivere in un canvas: calcolare `larghezza_mostrata / larghezza_interna` e verificare che
 il carattere reso stia sopra i ~10px veri. Se non ci sta, non è un problema di misura: è testo nel
 posto sbagliato.
+
+### 44. Una funzione costruita e vuota è una bugia come le altre
+
+Il bottone «📖 Ispeziona» nello zaino compare solo se l'oggetto ha un campo `lore`. Il codice era
+scritto in quattro giochi su cinque. Gli oggetti che avevano davvero qualcosa da leggere erano:
+Relais 18 su 32, Casa 8 su 24, **Zoom 0 su 12, Corona 0 su 29 — e in Corona il bottone non era
+nemmeno stato portato**. Un bottone che compare su un oggetto su trenta è peggio di nessun bottone:
+il giocatore impara che quella funzione non c'è, e smette di cercarla anche dove c'è.
+
+È lo stesso errore della valuta che non compra niente (lezione 25), applicato a una funzione invece
+che a una risorsa. Il validatore adesso tiene insieme le due metà: se un oggetto ha un retro,
+l'interfaccia deve mostrarlo; se l'interfaccia lo mostra, almeno l'8 e il 20% degli oggetti devono
+averne uno; e un retro sotto le 35 parole è uno stub, non un contenuto.
+
+Il controllo **non** pretende un retro su ogni oggetto, e questo è deliberato: un pezzo di nastro
+isolante che serve solo a costruire altro non ha un secondo strato, e inventarglielo sarebbe
+riempitivo — cioè il difetto che si stava cercando di correggere. Il retro va agli oggetti che
+portano una storia: la lista d'imbarco con un nome aggiunto a penna, il d20 comprato nel 2019 e mai
+tirato, la candela del motore ancora tiepida con la targhetta «Gruppo 2024».
