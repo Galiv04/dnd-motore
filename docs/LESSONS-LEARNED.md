@@ -700,3 +700,31 @@ Due regole che ne seguono, per qualunque schermata:
 2. **Le misure prese col pannello del browser nascosto sono spazzatura**: `innerWidth`/`innerHeight`
    tornano 0 e ogni `getBoundingClientRect` mente. Prima di misurare, portare la scheda in primo
    piano — o si passa mezz'ora a inseguire difetti che non esistono (mi è capitato due volte).
+
+### 34. La pietà progressiva non è gentilezza: è l'unica cosa che chiude il loop
+
+Estensione della lezione 22 a tutta la serie, trovata leggendo la diagnostica di una suite lenta.
+Nelle partite simulate del Relais il bot visitava lo stesso boss **225 volte** in una singola run
+(`z3_boss×225`, `h1×362`), fino a esaurire la guardia dei 2000 passi. L'implementazione del ritorno
+al checkpoint era **migliore** della mia (una scelta vera nella scena di sconfitta, offerta dalla
+seconda caduta, non una modale) — e proprio per questo il loop era perfetto: il bot la cliccava,
+tornava, ripercorreva la strada, perdeva di nuovo, per sempre.
+
+Il ritorno al checkpoint, da solo, non basta. Servono **tre pezzi**:
+
+1. **La ripartenza** (lezione 18).
+2. **La pietà progressiva**: ogni ritorno toglie il 12% dei PV e −1/−2 ai colpi di chi ti ha steso,
+   fino a un terzo. E il log del combattimento **lo dice**: *«siete già tornati indietro due volte,
+   e chi vi ha steso è più stanco di allora (−24% PV e ai suoi colpi)»*. Il gioco cede, non il
+   giocatore — e il giocatore lo vede cedere, che è metà del regalo.
+3. **Una via d'uscita esplicita** dopo N ritorni, che porti a un **finale vero** e non a una resa.
+
+E nel test, la guardia che lo nomina:
+
+```js
+if (Gc.stats.checkpointRitorni > 4) throw new Error(`LOOP DI CHECKPOINT: ${n} ritorni — il gruppo non supera questo scontro e il gioco non offre una via d'uscita`);
+```
+
+Senza quella riga il sintomo non è «errore»: è **«la suite è lenta»**, e si perde mezz'ora a
+ottimizzare i test invece di sistemare il gioco. Il conteggio dei ritorni è il termometro giusto:
+se sale sopra 3 in una partita pilotata, il problema è il bilanciamento, non il bot.
