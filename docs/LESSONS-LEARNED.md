@@ -1018,3 +1018,25 @@ un test che sembra provare una cosa e non prova niente — e tutti e tre erano *
 La contromisura è sempre la stessa: **ogni scenario nuovo dichiara nel suo `verify` la scena che
 deve aver visitato.** Se l'opzione non funziona, il test diventa rosso subito e dice quale scena
 manca, invece di passare in silenzio per mesi.
+
+### 49. L'unica finestra che i test aprivano era quella che era già crashata
+
+Le partite simulate percorrono il grafo, tirano i dadi, combattono e vincono i minigiochi. Non
+cliccano su niente. Per mesi l'unica finestra dell'interfaccia provata da un test è stata la
+**scheda del personaggio** — e ci è finita solo *dopo* che era crashata in silenzio per mesi, su
+`ReferenceError: conditions is not defined`, proprio sulla schermata che il committente aveva
+chiesto per vedere gli stati.
+
+Il resto non era provato da nessuno: mappa, zaino, regole, riepilogo della compagnia, diario, menu,
+fucina, quaderno, e il retro degli oggetti. Nove template, alcuni con dentro un `drawMap()` di
+sessanta righe che disegna su canvas, tutti a un `ReferenceError` di distanza dal non funzionare
+senza che nessuno se ne accorgesse — e in una sola giornata ho toccato il codice della mappa in
+tutti e cinque i giochi.
+
+Adesso ogni suite ha una prova che apre **tutto quello che il motore espone**: cicla sui nomi delle
+finestre presenti in `Engine`, chiama `Crafting.open()` e `Misteri.show()` dove esistono, e apre il
+retro di tre oggetti. È dieci righe di test e copre nove schermate.
+
+La regola generale: **se una funzione può essere chiamata da un bottone, un test deve chiamarla.**
+Non serve verificare cosa disegna — basta che non esploda. Il 90% del valore di questo controllo sta
+nel fatto che gira, non in cosa afferma.
