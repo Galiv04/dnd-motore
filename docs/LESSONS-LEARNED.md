@@ -587,3 +587,34 @@ if (vecchio && nNuovo < nVecchio) {
 Regola generale: **uno strumento che può distruggere lavoro deve rifiutarsi di farlo**, non fidarsi
 di chi lo lancia. E l'assemble ora stampa il conteggio delle scene, non solo i caratteri: un numero
 di caratteri non dice niente, un numero di scene sì.
+
+### 30. Uno sfondo sbagliato non dà errore: dà una scena che mente
+
+La validazione visiva su Pages ha trovato, in mezz'ora, quattro cose che 33 controlli statici e 14
+partite simulate non potevano vedere:
+
+1. **Otto scene di fila con il fondale sbagliato.** Il cluster dell'orto dei Coraggio — pomodori, un
+   fico, un cane, in pieno sole, alle 11:24 — usava `location: 'sotto'`, il painter sottomarino. Il
+   testo raccontava un orto e il canvas mostrava una stanza allagata. Nessun errore, nessun avviso.
+2. **La scena d'apertura disegnava il posto sbagliato.** Scauri, il lungomare di casa con la macchina
+   parcheggiata male, usava `porto` — che in quel gioco è il porto romano di Ventotene, una parete di
+   tufo scavata a picco. Due posti diversi a centoventi chilometri di distanza.
+3. **Una scena sul traghetto tinta di blu profondo**: `metri: 40` su `location: 'traghetto'`, perché
+   il primo paragrafo ricordava un'immersione. Il canvas si oscurava e si stringeva mentre la scena
+   parlava del ponte di poppa alle 17:30.
+4. **Un painter illeggibile**: `porto` disegnava un lastrone di tufo piatto su metà inquadratura, con
+   le case del ciglio sepolte sotto la parete e i segni degli scalpelli invisibili a quell'alfa.
+   In codice era ricchissimo; sullo schermo era un muro giallo.
+
+I primi tre sono diventati controlli automatici (`Coerenza fra sfondo e didascalia`): un luogo
+**chiuso** su una scena la cui **didascalia** dice che sei all'aperto è un FAIL; `metri > 0` su un
+luogo che non è sott'acqua è un FAIL. Il confronto si fa sulla didascalia e non sul corpo del testo,
+perché una scena può ricordare un altro posto senza sbagliare — e `cisterna_sigillata` resta lecita
+con una didascalia «all'aperto», perché quel muro si guarda **da** un orto.
+
+Il quarto no: quello lo trovano solo gli occhi. Il metodo che funziona, quando localhost è morto:
+**si pubblica, e poi si guarda sul sito vero** — e per guardarli tutti insieme si inietta dal
+browser una griglia che chiama ogni painter su un canvas 960×360 e li impagina in una tavola. A
+miniatura si giudica la composizione; a dimensione vera si giudica il dettaglio. La `cella 47`
+sembrava vuota nella miniatura e a 960 px aveva tutte e ottomilaquarantuno le tacche in gruppi di
+cinque: **le due scale servono entrambe**.
