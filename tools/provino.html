@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!-- ============ PROVINO — tutti i fondali di un gioco, in una pagina ============
+     Si copia in `tools/provino.html` dentro il repo di un gioco, e si apre da Pages:
+       https://galiv04.github.io/<gioco>/tools/provino.html
+
+     PERCHÉ ESISTE. Richiesta del committente, 23 agosto 2026: «tutte queste utility per
+     ispezionare le componenti grafiche mettiamole nel motore — una pagina con tutte le
+     figure insieme». Serve a due persone: a lui, per guardare i fondali dal telefono
+     senza giocare fino a quella scena; e a chi lavora, per scegliere quale guardare da
+     vicino senza aprirne venti.
+
+     I TRE INTERRUTTORI, che sono quelli che trovano i difetti:
+     · FONDO MAGENTA — in partita il riquadro della scena ha fondo nero, quindi le zone
+       che nessuno dipinge si vedono nere e sembrano contenuto (un vicolo fra due case,
+       un'ombra, la lontananza in fondo a una strada). Su magenta sono errori.
+     · SCALA — a dimensione vera un canvas 960×360 su uno schermo grande è già ridotto:
+       molti difetti si vedono solo al doppio.
+     · PROFONDITÀ — dove il motore ha un velo (l'apnea, l'eclissi), va provato anche a
+       velo tirato, perché è così che il giocatore lo vede per metà partita.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Provino dei fondali</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d0f13; color: #d8d4c8;
+         font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  header { position: sticky; top: 0; z-index: 9; padding: 10px 14px;
+           background: #14171d; border-bottom: 2px solid #2a2f38; display: flex;
+           flex-wrap: wrap; gap: 14px; align-items: center; }
+  h1 { font-size: 17px; margin: 0 10px 0 0; letter-spacing: .04em; }
+  label { display: inline-flex; gap: 6px; align-items: center; }
+  .scheda { padding: 14px; border-bottom: 1px solid #23272f; }
+  .nome { color: #9fd0a8; margin-bottom: 6px; }
+  .nome b { color: #f0ead8; }
+  .nota { color: #c8a05a; }
+  canvas { display: block; width: 100%; height: auto; image-rendering: pixelated;
+           border: 2px solid #2a2f38; }
+  .fuori { color: #e07a6a; }
+</style>
+
+<header>
+  <h1>PROVINO DEI FONDALI</h1>
+  <label><input type="checkbox" id="magenta"> fondo magenta</label>
+  <label>scala <select id="scala"><option>1</option><option selected>2</option><option>3</option></select></label>
+  <label>profondità <input type="range" id="prof" min="0" max="100" value="0" style="width:110px"><span id="profN">0%</span></label>
+  <span id="esito"></span>
+</header>
+<div id="lista"></div>
+
+<script src="../js/sprites.js"></script>
+<script src="../js/scenes.js"></script>
+<script>
+(function () {
+  const lista = document.getElementById('lista');
+  const chkM = document.getElementById('magenta');
+  const selS = document.getElementById('scala');
+  const rngP = document.getElementById('prof');
+  const profN = document.getElementById('profN');
+  const esito = document.getElementById('esito');
+  const nomi = Object.keys(Scenes.painters);
+
+  /* Quanto di questo fondale resta scoperto: è il numero che l'occhio non sa dare.
+     Si legge l'alfa vera del canvas, non le chiamate fatte. */
+  function scoperto(cv) {
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let n = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 235) n++;
+    return n;
+  }
+
+  function disegna() {
+    const scala = +selS.value;
+    const W = 960 * scala, H = 360 * scala;
+    lista.innerHTML = '';
+    let sporchi = 0;
+    for (const nome of nomi) {
+      const div = document.createElement('div');
+      div.className = 'scheda';
+      const tit = document.createElement('div');
+      tit.className = 'nome';
+      div.appendChild(tit);
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      let errore = null;
+      try {
+        if (Scenes.setDepth) Scenes.setDepth(+rngP.value / 100 * 45);
+        else if (Scenes.setEclipse) Scenes.setEclipse(+rngP.value / 100);
+        Scenes.painters[nome](ctx, W, H);
+      } catch (e) { errore = e.message; }
+      const vuoti = errore ? 0 : scoperto(cv);
+      if (vuoti > 700 * scala * scala) sporchi++;
+      tit.innerHTML = `<b>${nome}</b> — ${W}×${H}`
+        + (errore ? ` <span class="fuori">ESPLODE: ${errore}</span>`
+                  : vuoti > 700 * scala * scala
+                    ? ` <span class="nota">⚠ ${vuoti} px scoperti: in partita si vedono NERI</span>`
+                    : ' ✔ opaco');
+      if (chkM.checked) cv.style.background = '#ff00ff';
+      div.appendChild(cv);
+      lista.appendChild(div);
+    }
+    esito.textContent = `${nomi.length} fondali · ${sporchi ? sporchi + ' con zone scoperte' : 'tutti opachi'}`;
+    esito.className = sporchi ? 'fuori' : '';
+  }
+
+  chkM.onchange = disegna;
+  selS.onchange = disegna;
+  rngP.oninput = () => { profN.textContent = rngP.value + '%'; disegna(); };
+  disegna();
+})();
+</script>
