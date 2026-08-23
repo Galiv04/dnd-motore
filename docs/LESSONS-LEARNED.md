@@ -728,3 +728,30 @@ if (Gc.stats.checkpointRitorni > 4) throw new Error(`LOOP DI CHECKPOINT: ${n} ri
 Senza quella riga il sintomo non è «errore»: è **«la suite è lenta»**, e si perde mezz'ora a
 ottimizzare i test invece di sistemare il gioco. Il conteggio dei ritorni è il termometro giusto:
 se sale sopra 3 in una partita pilotata, il problema è il bilanciamento, non il bot.
+
+### 35. Il difetto era in TUTTI E CINQUE i giochi, e nessuno l'aveva mai misurato
+
+Seguito della 27 e della 34, e la scoperta più larga di questa tornata. Il controllo scritto per
+Pandataria («l'eroe più fragile deve reggere almeno 3 colpi») è stato portato negli altri quattro
+validatori, e il risultato è stato uguale in tutti:
+
+| gioco | eroe più fragile | boss squilibrati | il peggiore |
+|---|---|---|---|
+| relais | 22 PV | 3 su 3 | 13,5 danni → **2 colpi** |
+| casa | 18 PV | 6 su 6 | 13,0 danni → **1 colpo** |
+| zoom | 22 PV | 1 su 1 | 15,0 danni → **1 colpo** |
+| corona | 18 PV | 3 su 3 | 13,5 danni → **1 colpo** |
+
+**Ogni boss della serie uccideva l'eroe più fragile in uno o due colpi.** Nessuno se n'era accorto in
+mesi di lavoro, perché nessuno l'aveva *misurato*: le suite passavano (i bot vincono spesso grazie ai
+ritiri e alle cure), il committente non si era lamentato (chi gioca al tavolo bara un po' in proprio
+favore, ed è giusto così), e in un playthrough il sintomo si presenta come **«loop di checkpoint»**
+o **«la suite è lenta»** — mai come «i numeri sono sbagliati».
+
+Ritarati tutti: danno portato a ≈ `pvMin / 4` scegliendo la combinazione dado+bonus più vicina
+**senza mai aumentare** (2d8+3 → 1d8+1), PV lasciati intatti perché quelli erano giusti. Ora l'eroe
+più fragile regge 4 colpi in tutti e cinque i giochi e i boss restano da 35-81 PV, cioè scontri veri.
+
+La lezione oltre i numeri: **un difetto che si presenta sempre travestito non viene trovato
+giocando, viene trovato misurando.** Le tre righe di aritmetica che lo scoprono valgono più di
+qualunque quantità di ore di test manuale — e vanno nel validatore, dove nessuno se le dimentica.
