@@ -40,9 +40,18 @@ const MODULI = ['js/misteri.js', 'js/crafting.js', 'js/engine.js', 'js/combat.js
 const flagImpostati = new Set();
 for (const s of Object.values(C)) {
   for (const f of Object.keys(s.sets || {})) flagImpostati.add(f);
+  /* E ANCHE I FLAG CHE IMPOSTANO I MINIGIOCHI. `minigame.config.extraFlag` è il
+     flag che l'apnea imposta se il giocatore scende SOTTO la profondità che gli
+     serviva, per vedere quella cosa che non gli serve — ed è il modo in cui
+     Pandataria apre la scena della muta sul fondo. Non conoscendolo, lo strumento
+     dichiarava irraggiungibile una scena che si raggiunge benissimo: un falso
+     positivo in uno strumento costa la fiducia in tutti i suoi veri positivi
+     (lezione 87). */
+  if (s.minigame && s.minigame.config && s.minigame.config.extraFlag) flagImpostati.add(s.minigame.config.extraFlag);
   for (const c of (s.choices || [])) {
     for (const f of Object.keys(c.sets || {})) flagImpostati.add(f);
     for (const f of Object.keys(c.sacrificeSets || {})) flagImpostati.add(f);
+    if (c.minigame && c.minigame.config && c.minigame.config.extraFlag) flagImpostati.add(c.minigame.config.extraFlag);
   }
 }
 if (R) for (const r of R) if (r.flag) flagImpostati.add(r.flag);
