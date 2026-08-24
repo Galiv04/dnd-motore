@@ -1762,3 +1762,69 @@ il disegno.
 Regola: quando si scrive un helper grafico, il primo collaudo è **renderizzarlo da solo e
 guardarlo**, non usarlo dentro una scena dove mille altre cose distraggono. E quando si passa
 da un painter che lo usa, si guarda se quello che si vede è quello che il nome promette.
+
+### 86. Il provino dice «sono tutti grigi», e poi non si sa da quale cominciare
+
+Il provino di un gioco intero — ventun fondali su una lastra — è la cosa più utile per
+capire *che* c'è un problema, e la meno utile per capire *dove*. Guardando quello della
+Casa si vede in un colpo d'occhio che diciannove quadri su ventuno sono un muro grigio con
+un oggetto piccolo in mezzo; poi si passa mezz'ora a decidere da quale partire, e si parte
+da quello che si ricorda meglio, che non è quello peggiore.
+
+Le tre regole delle lezioni 58-62 sono numeriche e nessuno le stava misurando:
+
+- **il soggetto** deve essere grande almeno un terzo dell'inquadratura → un nono dell'area,
+  l'11%;
+- servono **due o tre elementi di contesto sopra i cento pixel** di lato;
+- **sotto i sessanta pixel** un oggetto non dice cosa è, dice solo che c'è.
+
+`tools/soggetto.mjs` le misura. Trova gli oggetti **per contorno, non per colore**: un muro
+dipinto con `blocks()` ha mille gradini di luminanza ma piccoli (varianza 0.08 = otto punti),
+un oggetto vero ha un bordo, e un bordo è un salto di trentadue punti. Si prendono quei
+salti, si dilatano di due pixel per ricucire i contorni tratteggiati del pixel art, e le
+macchie connesse sono gli oggetti. `--riquadri` scrive i PNG col soggetto cerchiato in verde
+e gli oggetti in giallo: si vede subito se quello che il misuratore chiama soggetto è
+davvero il soggetto.
+
+Su Pandataria ha trovato in un colpo tre cose che il provino non mostrava: una terrazza col
+99% dei pixel sotto la luminanza 42 (su un telefono: un rettangolo nero), un quadro in cui
+nessun oggetto arrivava a cento pixel di lato pur essendo tutto primo piano, e una gamba che
+il misuratore inquadrava come un oggetto separato dal letto — che a occhio era il difetto
+«sembra una tavola di legno appoggiata sul materasso».
+
+### 87. La soglia che segna diciotto righe su ventuno non viene più letta
+
+Lo stesso strumento, sul Relais, ha segnato **diciotto fondali su ventuno** come troppo
+scuri. E aveva torto: il Relais si svolge tutto in una notte, dai tornanti all'alba, e
+diciotto quadri di cielo notturno e stanze con una lampadina sola non sono diciotto difetti.
+
+Uno strumento che segna il 90% delle righe non è severo: è rotto, e la reazione giusta di
+chi lo legge è ignorarlo — che è peggio che non averlo.
+
+Quindi la soglia si **dichiara nel gioco**, in `docs/FONDALI.json`, con la sua ragione
+scritta (`_soglie: { nero: 0.72, perche: "..." }`), e lo stesso per le deroghe sui singoli
+quadri. Alzata al 72%, la lista è passata da diciotto a dieci, e quei dieci sono difetti
+veri: l'ossario che è una carta da parati di duecentotrentacinque nicchie da quaranta pixel,
+il corridoio con il 66% del quadro in un colore solo, la soffitta con il 69%.
+
+Due cose che la deroga NON deve poter fare:
+- **la soglia del nero si può alzare, quella del soggetto no.** Un quadro può essere buio;
+  non può essere buio e vuoto.
+- una deroga **senza la ragione scritta** (meno di dodici caratteri) non viene accettata dallo
+  strumento. Se la ragione non si riesce a scrivere, non è una deroga: è il difetto.
+
+### 88. La cura del buio non è schiarire: è mettere la luce che la scena implica
+
+La terrazza delle Parracine, a mezzanotte e quaranta, aveva il 99% dei pixel sotto la
+luminanza 42. La tentazione è alzare l'esposizione di tutto — e sarebbe la cosa sbagliata:
+il mare **deve** restare una lastra nera, il buio è il soggetto.
+
+La cura giusta è chiedersi *quale luce c'è davvero in quella scena*, e disegnare quella. Su
+quella terrazza c'è la lampadina sopra la porta del B&B, alle spalle di chi guarda. Costa
+venti righe: un velo caldo sul pavimento che si smorza allontanandosi, un rimbalzo sulla
+faccia del parapetto, il filo di luce sul coronamento, i piani di sopra di tavolino e sedie
+in pieno — e le **tre ombre lunghe** che vanno verso il mare, perché la luce è dietro.
+
+E il risultato è più horror di prima, non meno: il chiaro davanti fa il nero più nero, e
+un'ombra che va verso il buio dice che la sorgente è dietro di te, cioè in un posto che non
+stai guardando.
