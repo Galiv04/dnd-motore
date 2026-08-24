@@ -1416,3 +1416,86 @@ La regola che ne viene: **quando un difetto compare in molte scene dello stesso 
 difetto di quelle scene.** È un helper, ed è una fortuna: si corregge in un posto e migliorano
 trenta immagini. Vale il contrario come avvertimento — prima di correggere lo stesso difetto per la
 seconda volta in due painter diversi, si guarda se il codice comune è quello.
+
+### 68. Un flag impostato e mai letto è una regola che si può infrangere gratis
+
+`ha_risposto` era il flag della scelta più disobbediente di un gioco: «Rispondere. Mettere la
+faccia sotto e dire *sono qui*», col tag che avverte «⚠️ Ada ve l'ha detto due volte: non si
+risponde». Lo impostava quella scelta, e **nessuna scena lo leggeva mai.** Zero occorrenze in
+tutti i draft.
+
+Il che vuol dire che la regola che quel gioco ripete più di ogni altra — Ada due volte, il
+pescatore come regola numero tre, la signora dei fagiolini con «non è isso ca te chiamma»,
+e una ninnananna che è letteralmente l'istruzione per l'uso — era l'unica **infrangibile
+gratis**. Il giocatore disobbediva, pagava quattro punti, e la storia non se ne accorgeva.
+
+Lo stesso vale per le protezioni: un amuleto che promette «una voce ti risparmia» senza dire
+mai *quale* voce lascia fuori non fa paura, fa comodo. Una protezione senza buco dichiarato
+è un oggetto che rassicura, non uno che aumenta la posta.
+
+Ora quel flag ha tre conseguenze — una scena che esiste solo per chi ha risposto, una scelta
+in più davanti a uno specchio, e sei punti vita in più al boss finale con un malus a uno dei
+due — e un modo di essere pagato, uno solo, in una scena scritta. Regola operativa:
+**cercare i flag orfani è cercare le promesse che il gioco non mantiene.** Si trovano con
+una grep e valgono più di dieci scene nuove, perché il materiale intorno c'è già.
+
+### 69. Le chiavi che il motore implementa e nessuno usa sono contenuto già pagato
+
+Cercando come far avverare la minaccia più grossa di un gioco — «chi è PRESO dal Coro resta
+come voce, e nelle scene dopo dice cose utili e strappanti», scritto nel documento di design
+e ripetuto per centottantasette scene — è venuto fuori che **non poteva succedere**:
+`killRoller` (la chiave che uccide chi ha appena tirato, e mai l'ultimo in piedi) aveva zero
+usi; `requires: { spirit: true }`, la condizione che apre le scelte visibili solo se nel
+gruppo c'è un morto, zero usi; e l'oggetto costruito appositamente per riportare indietro
+chi è stato preso era spendibile in **un solo punto di tutta la campagna, che era un
+epilogo**. Il motore sapeva fare la cosa peggiore del gioco. Nessuna scena gliela chiedeva.
+
+Tre scene nuove e la promessa si avvera. E il costo di scriverle è basso proprio perché il
+motore c'era già: **una chiave implementata e mai usata è contenuto pagato e mai ritirato.**
+
+Il modo di trovarle è meccanico e va fatto una volta per gioco: si elencano le chiavi che il
+motore legge (una grep su `scene.` e `requires.` nell'engine), si contano gli usi nei dati, e
+si guarda la lista degli zeri. Ogni zero è una domanda: *il design la promette? allora è un
+bug. Non la promette? allora è codice morto.*
+
+### 70. Le mie tre inciampate di oggi, che sono sempre le stesse tre
+
+Aggiungendo sei scene a un gioco maturo ho rifatto, in un pomeriggio, tre errori che questo
+stesso documento descrive già.
+
+**Uno: chiavi di dati sul posto sbagliato.** Ho scritto `requires` su una scena (il motore la
+legge sulle scelte) e `attenzione` su una scelta (il motore la legge sulle scene), due volte.
+Il validatore le ha bocciate subito, e la correzione ha *migliorato* il gioco: una scelta che
+promette di sovrapporre due tracce audio ha ricevuto la scena in cui le sovrappone, e una che
+promette «cinque metri, solo per vedere dove sta» ha ricevuto la scena in cui si vede. Il
+controllo sulle chiavi morte non serve a tenere pulito il codice: serve a trasformare le
+promesse in scene.
+
+**Due: scenari nuovi inseriti in mezzo alla lista.** I semi vengono da un contatore
+progressivo, quindi uno scenario in mezzo rinumera tutti quelli dopo — e due partite sane
+hanno cominciato a finire da un'altra parte. È la lezione 47, e la nota che ho lasciato nel
+codice stavolta dice *perché*, non *cosa*.
+
+**Tre: campi del log sbagliati.** `r.log.visited` dove il campo si chiama `scenes`, e
+`.size` su `everMorto` che viene convertito in array prima di essere restituito. Entrambi
+danno un controllo che **non può passare** — che è peggio di un controllo che manca, perché
+insegna a guardare il rosso senza crederci. Regola: un'asserzione nuova va vista fallire e
+poi passare. Se non l'hai vista fallire, non sai cosa stai misurando.
+
+### 71. Un allarme falso in un controllo costa più di dieci difetti piccoli
+
+Il controllo sui flag richiesti e mai impostati ha dichiarato irraggiungibile un contenuto
+che era perfettamente raggiungibile: il flag lo assegnava un minigioco, e i minigiochi lo
+scrivono con una chiave **calcolata** (`G.flags[cfg.extraFlag] = true`) che nessuna
+espressione regolare sul sorgente può vedere.
+
+Il danno di un falso positivo non è il tempo che si perde a inseguirlo. È che insegna a
+diffidare del rosso — e un controllo di cui si diffida è un controllo spento. Vale la pena
+correggerlo *prima* di qualunque difetto vero: adesso il validatore legge gli `extraFlag`
+dalle scene, in tutti e cinque i giochi.
+
+Corollario dello stesso giorno: quando **due** strumenti misurano la stessa cosa e dicono
+numeri diversi, non si sceglie quello che fa più comodo — si guarda quale dei due sta
+modellando e quale sta misurando. Il modello a `fillRect` sommati aveva trovato difetti veri,
+ma segnalava come scoperti tre fondali pieni; il rasterizzatore che disegna per davvero non
+sbaglia. Ora il validatore usa quello, e la soglia è scritta in un posto solo.
