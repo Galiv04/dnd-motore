@@ -1828,3 +1828,72 @@ in pieno — e le **tre ombre lunghe** che vanno verso il mare, perché la luce 
 E il risultato è più horror di prima, non meno: il chiaro davanti fa il nero più nero, e
 un'ombra che va verso il buio dice che la sorgente è dietro di te, cioè in un posto che non
 stai guardando.
+
+### 89. Il misuratore che spezza un letto in cinque pezzi, e le due liste
+
+`soggetto.mjs` trova gli oggetti per contorno. Un letto disegnato in cinque toni — testiera
+di noce, lino del piano, fascia del risvolto, fianco, pediera — ha quattro contorni INTERNI,
+e il misuratore lo contava come cinque oggetti piccoli: verdetto «nessun soggetto» su una
+camera che il soggetto ce l'ha. Stessa cosa per un divano, un comò, una barca.
+
+La cura è unire i riquadri che si toccano (a meno di otto pixel, che è la cucitura del pixel
+art), a ripetizione, finché non cambia più niente. Ma unire ha un effetto collaterale che
+all'inizio non avevo visto: **il conto degli oggetti sopra i cento pixel è crollato**, perché
+due mobili che si occludono diventano un mobile.
+
+Quindi servono **due liste, e ognuna risponde a una domanda diversa**:
+
+- i riquadri **fusi** dicono quanto è grande il soggetto (un letto in cinque toni è un letto);
+- i riquadri **crudi** dicono quante cose distinte stanno sopra i cento pixel (se si contassero
+  sui fusi, un mobile davanti a un altro ne farebbe uno).
+
+E una terza correzione, sullo stesso strumento: **l'area sbaglia sui soggetti alti e stretti.**
+Il telescopio della soffitta è 136×175 — centosettantacinque pixel su trecentosessanta sono
+metà dell'altezza del quadro, quindi la regola «grande almeno un terzo dell'inquadratura» è
+soddisfatta con abbondanza — ma l'area fa il 6,9%, sotto l'11%. La regola, letta come la si
+dice, è LINEARE. Adesso passa chi soddisfa l'area **oppure** un terzo di un lato.
+
+Morale generale: quando uno strumento nuovo segna qualcosa, la prima ipotesi da provare non è
+«il quadro è sbagliato» ma «la misura è sbagliata» — e si prova guardando il quadro. Le tre
+correzioni di sopra sono venute tutte da lì, e ognuna ha togliato dalla lista quattro o cinque
+falsi allarmi in ogni gioco.
+
+### 90. Ma a volte il misuratore ha ragione e dice una cosa che l'occhio non dice
+
+Nel salotto della Casa il misuratore non riusciva a vedere il divano come un oggetto solo. Non
+era un difetto della misura: la **sagoma del divano contro la parete faceva un salto di
+luminanza di trentasei punti** (appena sopra la soglia), e le cuciture fra i cuscini ne
+facevano **otto**, cioè zero. Un divano grigio in una stanza grigia.
+
+L'occhio, guardando il PNG, «lo vede» — perché sa che lì c'è un divano. Su un telefono, di
+sera, con la barra di navigazione accesa, non lo vede.
+
+Le due cure, che valgono per qualunque oggetto su un fondo dello stesso valore:
+1. **l'ombra di contatto** intorno alla sagoma (una riga più scura di tre pixel), che è quello
+   che stacca un oggetto dal fondo nel pixel art;
+2. **le cuciture vere**: la riga scura più il labbro in luce accanto. A `rgba(20,20,26,.34)`
+   su un grigio medio non si vede niente.
+
+Il soggetto è passato dal 5,4% al 15,7% dell'area senza spostare un solo mobile.
+
+### 91. Quando il concetto del painter litiga col testo che deve servire
+
+Il salotto della Casa — **ventisette scene, il fondale più visto del gioco** — era disegnato
+come «il Salotto-Cattedrale»: soffitto che si perde nel buio, quattro pilastri, la TV come una
+VETRATA verticale con le piombature e i riquadri «come scene di santi», il divano di spalle,
+cinque lattine allineate come lumini votivi.
+
+Bella idea. E in contraddizione diretta con la prima riga della scena che quel fondale serve:
+
+> «Il salotto vi accoglie con la scena più normale del mondo, ed è questo a farla atroce.»
+
+Una cattedrale non è la scena più normale del mondo. E le tre cose che il testo nomina — il
+divano di Daniele **con l'incavo del suo corpo ancora stampato nei cuscini**, la TV accesa
+sulla tempesta di static che pulsa, la Switch in pausa su Mario Kart **a cui manca il joy-con
+sinistro** — nel quadro non c'erano affatto: l'incavo era un rettangolo nero, la Switch non
+esisteva.
+
+Il controllo che non stavo facendo: non «questo fondale è bello?» ma **«questo fondale dice
+la stessa cosa che dice la prima riga della scena?»** Quando la risposta è no, non si ritocca:
+si rifà, e della vecchia idea si tiene solo il pezzo che non litiga — qui, che la luce della
+TV è l'unica luce della stanza e taglia il buio come la luce di una finestra.

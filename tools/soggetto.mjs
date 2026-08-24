@@ -55,6 +55,13 @@ const MIN_MACCHIA = 90;  // sotto, è rumore di texture
 const LATO_OGGETTO = 100;   // «sotto i cento pixel è un elemento di contesto»
 const LATO_MINIMO = 60;     // «sotto i sessanta non dice cosa è»
 const AREA_SOGGETTO = 0.11; // un terzo del lato = un nono dell'area
+/* MA L'AREA DA SOLA SBAGLIA sui soggetti alti e stretti. Il telescopio della
+   soffitta del Relais e' 136x175: 175 pixel su 360 sono metà dell'altezza del
+   quadro, cioe' la regola «grande almeno un terzo dell'inquadratura» e'
+   soddisfatta con abbondanza — ma l'area fa il 6,9%, sotto l'11%. La regola,
+   letta come la si dice, e' LINEARE: un terzo dell'inquadratura. Quindi passa
+   chi soddisfa l'area OPPURE chi arriva a un terzo di un lato. */
+const LATO_SOGGETTO = 1 / 3;
 const NERO = 42;            // sotto questa luminanza il giocatore vede nero
 
 /* LE DEROGHE, e ognuna scritta con la sua ragione (lezione 82). Ci sono quadri che
@@ -151,7 +158,34 @@ function oggetti(lum) {
     const w = maxX - minX + 1, h = maxY - minY + 1;
     out.push({ n, x: minX, y: minY, w, h, area: (w * h) / (W * H) });
   }
-  return out.sort((a, b) => b.area - a.area);
+  /* E POI SI UNISCONO I RIQUADRI CHE SI TOCCANO. Un letto disegnato in cinque
+     toni — testiera di noce, lino del piano, fascia del risvolto, fianco,
+     pediera — ha cinque contorni interni e il misuratore lo contava come cinque
+     oggetti, quindi «nessun soggetto». Ma un oggetto disegnato in cinque toni è
+     un oggetto: due macchie i cui riquadri si toccano (a meno di otto pixel,
+     che è la cucitura del pixel art) sono lo stesso oggetto. Si fondono a
+     ripetizione, finché non cambia più niente. */
+  const crude = out.map(o => ({ ...o }));
+  const GIUNZIONE = 8;
+  let cambiato = true;
+  while (cambiato) {
+    cambiato = false;
+    for (let a = 0; a < out.length && !cambiato; a++) {
+      for (let b = a + 1; b < out.length; b++) {
+        const A = out[a], B = out[b];
+        const tocca = A.x - GIUNZIONE < B.x + B.w && B.x - GIUNZIONE < A.x + A.w
+                   && A.y - GIUNZIONE < B.y + B.h && B.y - GIUNZIONE < A.y + A.h;
+        if (!tocca) continue;
+        const nx = Math.min(A.x, B.x), ny = Math.min(A.y, B.y);
+        const nw = Math.max(A.x + A.w, B.x + B.w) - nx, nh = Math.max(A.y + A.h, B.y + B.h) - ny;
+        out[a] = { n: A.n + B.n, x: nx, y: ny, w: nw, h: nh, area: (nw * nh) / (W * H) };
+        out.splice(b, 1);
+        cambiato = true;
+        break;
+      }
+    }
+  }
+  return { fusi: out.sort((a, b) => b.area - a.area), crude: crude.sort((a, b) => b.area - a.area) };
 }
 
 function misura(S, nome) {
@@ -173,14 +207,21 @@ function misura(S, nome) {
   }
   let dominante = 0;
   for (const v of bucket.values()) if (v > dominante) dominante = v;
-  const og = oggetti(lum);
+  /* Due liste, e ognuna serve a una domanda diversa. I riquadri FUSI dicono
+     quanto e' grande il soggetto (un letto in cinque toni e' un letto). Quelli
+     CRUDI dicono quante cose distinte ci sono sopra i cento pixel: se si
+     contassero sui fusi, un mobile che ne occlude un altro ne farebbe uno. */
+  const { fusi, crude } = oggetti(lum);
+  const og = fusi;
   const soggetto = og[0] || { area: 0, w: 0, h: 0, x: 0, y: 0 };
   return {
     nome,
     soggetto,
     oggetti: og,
-    grossi: og.filter(o => Math.max(o.w, o.h) >= LATO_OGGETTO).length,
-    minuscoli: og.filter(o => Math.max(o.w, o.h) < LATO_MINIMO).length,
+    haSoggetto: soggetto.area >= AREA_SOGGETTO
+      || soggetto.w / W >= LATO_SOGGETTO || soggetto.h / H >= LATO_SOGGETTO,
+    grossi: crude.filter(o => Math.max(o.w, o.h) >= LATO_OGGETTO).length,
+    minuscoli: crude.filter(o => Math.max(o.w, o.h) < LATO_MINIMO).length,
     nero: nero / (W * H),
     piatto: dominante / (W * H),
   };
@@ -197,6 +238,7 @@ const ref = nomi.map(n => misura(S, n));
 console.log(`\n  C'È UN SOGGETTO?  ${nomi.length} fondali di ${radice.split('/').pop()}${NOTTE ? '  (di notte)' : ''}`);
 if (SOGLIA_NERO !== 0.45) console.log(`  soglia del nero al ${(SOGLIA_NERO * 100) | 0}% — ${SOGLIE.perche}`);
 console.log('');
+console.log("  (soggetto: passa all'11% dell'area OPPURE a un terzo di un lato)");
 console.log('  fondale               soggetto     riquadro    >100px  <60px   nero   piatto');
 console.log('  ' + '─'.repeat(78));
 const ordinati = [...ref].sort((a, b) => a.soggetto.area - b.soggetto.area);
@@ -204,13 +246,13 @@ const segno = (m, che, male) => male ? (deroga(m.nome, che) ? '~' : '✗') : ' '
 for (const m of ordinati) {
   const pct = (m.soggetto.area * 100).toFixed(1).padStart(5);
   const rq = `${m.soggetto.w}×${m.soggetto.h}`.padStart(9);
-  const seg = segno(m, 'soggetto', m.soggetto.area < AREA_SOGGETTO);
+  const seg = segno(m, 'soggetto', !m.haSoggetto);
   const segN = segno(m, 'nero', m.nero > SOGLIA_NERO);
   const segP = segno(m, 'piatto', m.piatto > 0.40);
   console.log(`  ${m.nome.padEnd(20)} ${pct}%${seg}  ${rq}    ${String(m.grossi).padStart(4)}   ${String(m.minuscoli).padStart(4)}  ${(m.nero * 100).toFixed(0).padStart(4)}%${segN} ${(m.piatto * 100).toFixed(0).padStart(4)}%${segP}`);
 }
 
-const senza = ordinati.filter(m => m.soggetto.area < AREA_SOGGETTO && !deroga(m.nome, 'soggetto'));
+const senza = ordinati.filter(m => !m.haSoggetto && !deroga(m.nome, 'soggetto'));
 const buii = ref.filter(m => m.nero > SOGLIA_NERO && !deroga(m.nome, 'nero'));
 const piatti = ref.filter(m => m.piatto > 0.40 && !deroga(m.nome, 'piatto'));
 const poveri = ref.filter(m => m.grossi < 2 && !deroga(m.nome, 'oggetti'));
