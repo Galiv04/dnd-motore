@@ -1649,3 +1649,26 @@ Quindi: **un taglio non è finito quando i test statici passano.** È finito qua
 simulate ripassano da dove passavano prima, e per saperlo bisogna leggere i PERCORSI
 (`TEST_DUMP=1`), non solo i verdetti. Il percorso stampato dice in tre secondi quello che un
 verdetto non dice in dieci minuti.
+
+### 81. Un suono che non parte non lascia tracce
+
+La Corona di Mezzanotte è stata a **zero stinger su centosettantasei scene** per tutta la sua
+vita, e nessuno se n'era accorto in cinque giochi. Non era una scelta di tono: nel suo motore
+mancava la riga che i quattro fratelli hanno da sempre —
+`if (firstVisit && scene.stinger && typeof Sound !== 'undefined') Sound.play(scene.stinger);`
+— e quindi `scene.stinger` non lo leggeva nessuno. Anche se qualcuno l'avesse scritto nei
+dati, non sarebbe suonato: sarebbe stato un dato morto, e il controllo delle chiavi ignote lo
+avrebbe perfino segnalato come typo.
+
+La cosa da imparare non è il bug: è **perché è sopravvissuto**. Un suono che non parte non
+lascia tracce da nessuna parte — non rompe niente, non stampa niente, non appare in nessun
+verdetto. Le cose invisibili si trovano solo misurandole di proposito, e per questo la
+copertura degli stinger adesso è una riga di `metriche.mjs` con una soglia.
+
+E la regola per assegnarli, imparata sbagliandola: **uno stinger segna un MOMENTO, non un
+numero.** Passano i finali, gli oggetti, i minigiochi, le prove risolte, i colpi da tre in su
+e le cure da quattro in su. Non passa la risorsa che sale di uno, che è il respiro del gioco
+e non un evento. La prima passata su Effetto Zoom ne aveva messi ottantaquattro, di cui
+quattordici col suono della moneta su scene che davano un punto di **Lucidità** — cioè un
+suono da soldi in un gioco dove quella risorsa è la lucidità. Tematicamente falso, e
+quarantadue di quegli ottantaquattro erano rumore.

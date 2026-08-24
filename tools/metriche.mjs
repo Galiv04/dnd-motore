@@ -45,6 +45,7 @@ let totalWords = 0;
 let scenesOver280 = 0;
 let totalChoices = 0;
 let corridorScenes = 0;   // una sola scelta, scena non di combattimento
+let conStinger = 0;
 let momentiIncerti = 0;
 let diceChecks = 0;
 let scenesWithEffect = 0;
@@ -61,6 +62,7 @@ for (const [id, scene] of scenes) {
 
   const isCombat = !!scene.combat;
   if (isCombat) combatScenes++;
+  if (scene.stinger) conStinger++;
   if (isCombat) momentiIncerti++;          // lo scontro e' il momento d'incertezza per eccellenza
   if (scene.minigame) momentiIncerti++;    // e il minigioco sta sulla SCENA, non solo sulle scelte
   if (scene.ending) endingScenes++;
@@ -106,6 +108,7 @@ console.log(`Prove di dado totali:       ${diceChecks}`);
 console.log(`Momenti d'incertezza:       ${diceChecks + momentiIncerti} (dadi + minigiochi + soglie + scontri) = 1 ogni ${(nScenes / Math.max(1, diceChecks + momentiIncerti)).toFixed(1)} scene`);
 console.log(`Scene con effetto meccanico:${scenesWithEffect} (${effectPct.toFixed(1)}%)`);
 console.log(`Combattimenti:              ${combatScenes}`);
+console.log(`Scene con uno stinger:      ${conStinger} (${(conStinger / nScenes * 100).toFixed(0)}%)`);
 console.log(`Finali:                     ${endingScenes}`);
 console.log(`Durata stimata:             ~${readingHours.toFixed(1)}-${readingHoursMax.toFixed(1)} ore`);
 
@@ -135,6 +138,17 @@ check(
   'Scene-corridoio ≤ 20%',
   corridorPct <= 20,
   `${corridorPct.toFixed(1)}%`
+);
+/* LO STINGER E' MEZZA SCENA. Il suono all'ingresso e' la meta' dell'atmosfera, e resta
+   invisibile a ogni controllo: un suono che non parte non lascia tracce. La Corona di
+   Mezzanotte e' stata a ZERO per tutta la sua vita — nel suo motore mancava la riga che
+   legge `scene.stinger`, e nessuno se n'era accorto in cinque giochi. La soglia e' bassa di
+   proposito (un quarto delle scene): uno stinger segna un MOMENTO — un finale, un oggetto,
+   una prova risolta, un colpo vero, una cura vera — e non un numero che cambia di uno. */
+check(
+  'Scene con uno stinger ≥ 25%',
+  conStinger >= nScenes * 0.25,
+  `${conStinger} su ${nScenes} (${(conStinger / nScenes * 100).toFixed(0)}%)`
 );
 check(
   "Momenti d'incertezza ~1 ogni 4 scene (dadi, minigiochi, soglie, scontri)",
