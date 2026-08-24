@@ -1897,3 +1897,94 @@ Il controllo che non stavo facendo: non «questo fondale è bello?» ma **«ques
 la stessa cosa che dice la prima riga della scena?»** Quando la risposta è no, non si ritocca:
 si rifà, e della vecchia idea si tiene solo il pezzo che non litiga — qui, che la luce della
 TV è l'unica luce della stanza e taglia il buio come la luce di una finestra.
+
+### 92. La domanda che trova più difetti di tutte: «cosa dice il testo che qui c'è?»
+
+Su ventidue fondali rifatti in questa passata, quasi tutti i difetti gravi si sono trovati
+con **una domanda sola**: si rilegge la prima riga di ogni scena che usa quel fondale, si
+segna ogni cosa che il testo nomina, e si guarda se c'è. Non «è bello?»: **«dice la stessa
+cosa?»**
+
+I casi in cui il quadro diceva il CONTRARIO del testo:
+
+- Casa, salotto (27 scene): disegnato come «il Salotto-Cattedrale», con la TV come vetrata e
+  le lattine come lumini votivi. Il testo apre con «il salotto vi accoglie con **la scena più
+  normale del mondo**, ed è questo a farla atroce».
+- Corona, cripta (11 scene): disegnata come una cripta sepolcrale con i sarcofagi. Il testo
+  dice «le **cantine** del castello: volte di pietra, **botti gigantesche** etichettate con le
+  annate, ragnatele come tende da salotto».
+- Casa, spiaggia: c'era «il riflesso del sole sul mare, una colonna spenta». Il testo: «una
+  lastra di vetro sporco fino all'orizzonte, senza una ruga, **senza un riflesso**».
+- Corona, fiume: l'acqua era **più scura** del cielo. L'indovinello su cui la scena è
+  costruita è «porto il cielo capovolto sulla schiena».
+- Corona, castello: pietra a luminanza 50 su un cielo a 33. Il testo: «un artiglio di **pietra
+  nera**, le guglie perse nel cielo senza sole».
+
+E i casi in cui il testo nominava una cosa e la cosa non c'era affatto: le sei tacche di
+Gregorio (il punto della scena), le cinque valigie nuove distinguibili dalle altre, il
+telescopio col treppiede e l'asola, la Switch a cui **manca il joy-con sinistro**, il
+calendario con la pagina strappata, la civetta del Bivio della Civetta, il **bivio** del Bivio
+della Civetta, la quercia più anziana a cui si fa l'inchino, il corridoio di funghi, la
+sdraio con la polo e gli occhiali a specchio, il cappello di Bertoldo sul sedile.
+
+Nessuno di questi si trova guardando il PNG e chiedendosi se è bello. Tutti si trovano
+mettendo il testo accanto all'immagine.
+
+### 93. Un oggetto dello stesso valore del suo fondo non c'è
+
+Trovato **cinque volte** in una passata sola, sempre uguale:
+
+| oggetto | suo valore | fondo | salto |
+|---|---|---|---|
+| divano del salotto (Casa) | 71 | 35 | 36 |
+| cuciture dei cuscini | — | — | **8** |
+| palo dell'ombrellone (Casa) | 100 | 116 | **16** |
+| gambe del treppiede (Relais) | 30 | 28 | **2** |
+| pietra del castello (Corona) | 50 | 33 | 17 (e invertito) |
+| chioma del salice (Corona) | 47 | 13-38 | invertito |
+
+Sotto i venti punti di salto due superfici sono la stessa superficie. L'occhio, guardando il
+PNG sul monitor grande, «lo vede» — perché sa che lì c'è un divano. Su un telefono, di sera,
+non lo vede. È per questo che serve un numero e non un'opinione.
+
+Le tre cure, in ordine di quanto costano:
+1. **l'ombra di contatto**: una riga più scura di due o tre pixel lungo la sagoma. Costa una
+   riga di codice e stacca qualunque oggetto da qualunque fondo.
+2. **il verso giusto della luce**: una chioma davanti a un cielo notturno è più SCURA del
+   cielo, non più chiara; una pietra nera è nera; un palo d'acciaio in controluce è scuro. Nove
+   volte su dieci il difetto è che l'oggetto è dipinto come se fosse illuminato da davanti da
+   una sorgente che nell'inquadratura non esiste.
+3. **il filo di luce sul bordo esposto**, dalla parte da cui la luce viene davvero. È quello
+   che restituisce il volume dopo che si è scurito tutto.
+
+### 94. Il piano orizzontale, per la sesta volta — e stavolta era un helper che c'era già
+
+Ancora piani orizzontali disegnati come pareti sdraiate: il parquet dell'appartamento e del
+salotto (doghe di 56×2 ogni 12 px, sempre uguali), le piastrelle della cucina fredda, il
+pavimento dell'ossario, quello della camera, il molo del fiume, l'acqua della cisterna, i
+corsi della cella.
+
+Ma la cosa da ricordare è un'altra: **nell'Effetto Zoom l'helper giusto c'era già.**
+`balconyFloor()` — progressione geometrica dei corsi e giunti divergenti — stava a
+duecentocinquanta righe di distanza dal painter del salotto, che è il fondale più visto di
+quel gioco (37 scene) e disegnava il pavimento a passo fisso.
+
+Prima di scrivere la geometria di un piano, di una scia, di una scala: **`grep` per un helper
+che la faccia già.** In cinque repo che si copiano il motore a vicenda, la funzione giusta
+esiste quasi sempre — e sta nel repo accanto.
+
+### 95. La regolarità uccide il significato
+
+Le duecentotrentacinque tacche dell'ossario in griglia perfetta. Le ottomila della cella in
+tredici fasce identiche. Sette bagagli in fila indiana a distanza uguale. Quattro salici
+identici. Sedici alberi a passo quasi uguale. Tre nicchie e quattro candele a distanza uguale.
+Sette funghi a passo regolare, che diventano un bruco.
+
+Il meccanismo è sempre lo stesso: **l'occhio vede prima il reticolo e poi il tratto.** Un muro
+contato per ventidue anni, se lo disegni a fasce regolari, diventa carta da parati anche se
+ogni singola tacca è storta — l'irregolarità nel piccolo non salva la regolarità nel grande.
+
+La cura non è «aggiungere rumore»: è dare al gruppo la storia che ha. Le tacche cominciano
+all'altezza della mano da seduti, vanno fino alla porta, poi scendono, poi quando sotto è
+pieno salgono, e le ultime sono corte e più leggere perché contare stanca. I bagagli si
+impilano per epoca. I funghi rimpiccioliscono andando in fondo.
