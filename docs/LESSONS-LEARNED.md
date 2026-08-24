@@ -1600,3 +1600,52 @@ numero**, perché lo si cita. `assemble.mjs` contava come scene ogni chiave di p
 e pescava anche gli oggetti di `ITEMS`: stampava «145 scene» dove `CAMPAIGN` ne ha 133. Come
 guardia funzionava — confrontava un numero con lo stesso numero di prima — e infatti nessuno
 se n'era accorto per cinque giochi.
+
+### 78. Un banco di prova senza default tira a sorte
+
+Il banco headless pilota le scelte con una mappa `sceneId → sottostringa del testo`. Quando
+una scena non ha una chiave, il banco prende la prima uscita disponibile — e finché le scene
+sono quelle che erano, va bene. Ma il giorno che si spezzano diciotto scene in due, le scelte
+si spostano nelle metà nuove, le chiavi non combaciano più e il fallback comincia a decidere
+la partita. In Pandataria è successo esattamente questo: a `d14_coro` non c'era nessun
+default, e la prima uscita disponibile era **«rispondere di sì», cioè cantare col Coro**.
+Quattro scenari sono finiti dentro la cosa senza averlo chiesto, e hanno riportato che il
+finale atteso non era arrivato. Il difetto sembrava del gioco ed era del banco.
+
+Tre regole che ne vengono, e costano poco:
+- **ogni nodo importante ha un default esplicito**, e il default è il percorso NEUTRO — mai
+  il più drammatico, mai il combattimento più duro;
+- **una chiave deve essere inequivocabile**: `'Scavare'` combacia anche con «Non scavare», e
+  il banco andava a finire nel ramo opposto. Si sceglie una parola che sta in una sola delle
+  scelte (`'quarantesimo'`);
+- **`sequences` si consumano, la mappa singola no.** Se il gioco può riavvolgere — un ritorno
+  da checkpoint riporta il giocatore sulla stessa scena — una `sequences` con un elemento
+  solo non esprime più niente al secondo passaggio. «Questo giocatore, ogni volta che gli
+  capita, lo brucia» si scrive con la mappa singola.
+
+### 79. Un ramo di fallimento che nessuno collauda è contenuto scritto per niente
+
+Il banco fa riuscire tutte le prove (`checkBias: 'best'`), che è giusto per gli scenari che
+devono ARRIVARE da qualche parte. La conseguenza, però, è che **il ramo del fallimento non lo
+legge nessuno**: nove scene di sconfitta scritte in un pomeriggio sono finite tutte e nove
+nell'elenco delle mai visitate. Testo, dialoghi, costi, riga meccanica: zero collaudo, e zero
+occhi.
+
+Serve almeno uno scenario `defaultCheckOutcome: 'fail'` — la partita sfortunata — e va
+spezzato in due o tre quando i rami si escludono a vicenda, perché una partita sola non può
+attraversarli tutti. Vale come regola generale: **per ogni meccanismo che ha due esiti, ci
+vuole uno scenario per esito.** Se il gioco sa fare una cosa e nessuna partita simulata la
+fa, quella cosa non è collaudata: è solo scritta.
+
+### 80. Aggiungere una scena non basta: bisogna dirlo a chi la deve attraversare
+
+Bilancio onesto di diciotto tagli fatti in un pomeriggio: il gioco è migliorato, e il
+collaudo è passato da 25 partite verdi a 27 guasti. Nessuno dei 27 era una scena rotta —
+erano tutti il banco che non arrivava più sul posto, e due erano requisiti che dopo il taglio
+cadevano in una scena diversa (l'immersione nella fossa vuole il bombolino riparato e dieci
+di fiato: prima si prendevano nella stessa scena, dopo il taglio no).
+
+Quindi: **un taglio non è finito quando i test statici passano.** È finito quando le partite
+simulate ripassano da dove passavano prima, e per saperlo bisogna leggere i PERCORSI
+(`TEST_DUMP=1`), non solo i verdetti. Il percorso stampato dice in tre secondi quello che un
+verdetto non dice in dieci minuti.
