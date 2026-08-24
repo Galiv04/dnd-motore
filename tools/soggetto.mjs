@@ -271,6 +271,33 @@ if (buii.length) console.log(`  ✗ ${buii.length} fondali che il giocatore vede
 if (piatti.length) console.log(`  ✗ ${piatti.length} fondali con più del 40% in un colore solo: ${piatti.map(m => m.nome).join(', ')}`);
 if (!senza.length && !poveri.length && !buii.length && !piatti.length) console.log('  ✔ tutti i fondali hanno un soggetto, due oggetti veri e nessuna parete vuota');
 
+/* --- e un controllo sul SORGENTE, non sui pixel: gli aloni fuori scala ------
+   `glow(ctx, x, y, w, h, rgb)` disegna un alone finito che è QUATTRO VOLTE la w
+   che gli si passa — w è il nucleo, non l'estensione. È l'errore che ho rifatto
+   quattro volte su cinque giochi, e si vede sempre allo stesso modo: archi
+   concentrici a spigolo netto intorno alla sorgente, perché a quella scala i
+   passaggi sovrapposti di glow() non si fondono più.
+   Sopra il 40% del lato del quadro (384 px di alone su 960) non è più una luce:
+   è una velatura su mezza inquadratura. */
+{
+  const src = join(radice, 'js/scenes.js');
+  if (existsSync(src)) {
+    const righe = readFileSync(src, 'utf8').split('\n');
+    const fuori = [];
+    righe.forEach((l, n) => {
+      const m = l.match(/glow\(ctx,[^,]+,[^,]+,\s*([0-9]+(?:\.[0-9]+)?)\s*,/);
+      if (m && parseFloat(m[1]) * 4 > W * 0.40) {
+        fuori.push({ riga: n + 1, nucleo: parseFloat(m[1]) });
+      }
+    });
+    if (fuori.length) {
+      console.log(`  ✗ ${fuori.length} chiamate a glow() con l'alone sopra il 40% del quadro (glow() finito = 4 x w):`);
+      for (const f of fuori) console.log(`     js/scenes.js:${f.riga} — nucleo ${f.nucleo} → alone ${Math.round(f.nucleo * 4)} px`);
+      console.log('');
+    }
+  }
+}
+
 if (RIQUADRI) {
   mkdirSync(FUORI, { recursive: true });
   for (const m of ref) {
