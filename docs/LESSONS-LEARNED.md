@@ -1499,3 +1499,104 @@ numeri diversi, non si sceglie quello che fa più comodo — si guarda quale dei
 modellando e quale sta misurando. Il modello a `fillRect` sommati aveva trovato difetti veri,
 ma segnalava come scoperti tre fondali pieni; il rasterizzatore che disegna per davvero non
 sbaglia. Ora il validatore usa quello, e la soglia è scritta in un posto solo.
+
+### 72. Un difetto grafico che nessun ritocco raddrizza è un errore di aritmetica
+
+La macchina di Scauri ha avuto cinque stesure e tre di queste sono state buttate. Ogni volta
+sembrava un problema di disegno — «la lamiera è piatta», «il portellone sembra un cartello»
+— e ogni volta, sotto, c'era un numero sbagliato. Tre in fila, tutti dello stesso genere:
+
+1. **Due misure che si contraddicono.** Il retro era 1,80 m × 100 px/m = 180 px, cioè
+   disegnato *parallelo al piano dell'immagine*; e insieme c'era una fiancata lunga 270 px,
+   che esiste solo se la macchina è girata. Se il retro ci guarda in pieno la fiancata non
+   si vede; se la fiancata si vede il retro è scorciato. Sullo schermo viene un furgone, e
+   nessuna rifinitura lo raddrizza. **Si sceglie un angolo, e tutte le misure escono da lui:**
+   retro = larghezza × cos(az), fiancata = lunghezza × sen(az).
+2. **La riga di terra dice da sola dove sta l'occhio.** `y_terra − orizzonte = (px/m) ×
+   altezza_occhio`. Con 238 px di differenza e una scala di 100 px/m, l'occhio
+   dell'osservatore stava a **due metri e quaranta**: una ripresa dal tetto di un furgone.
+   Una delle due va cambiata, e conviene cambiare la scala — 128 px/m per un occhio a 1,86 m,
+   che è uno in piedi sul marciapiede.
+3. **Di sbieco, i cerchi sono ellissi.** Le ruote erano tonde: 66 px di diametro in
+   larghezza su un passo che, scorciato, è 125 px. Due ruote da 66 su un passo di 125 non ci
+   stanno nemmeno dentro, e l'occhio se ne accorge prima del cervello — legge «giocattolo».
+   In larghezza vanno 66 × sen(az) = 35, più la fascia del battistrada.
+
+Regola operativa: **prima di ritoccare un fondale che non funziona, si scrivono i tre numeri
+della prospettiva — focale, altezza dell'occhio, angolo — e si controlla che tutto il resto
+esca da loro.** Se non escono, il ritocco è tempo buttato.
+
+### 73. Quello che non si disegna, si vede
+
+Il brancardo di un'automobile sta a trentadue centimetri da terra e la strada sta a zero. In
+mezzo non c'è niente da disegnare — ed è proprio per questo che va disegnato: senza il buio
+sotto la macchina, tra le ruote si vedeva **il marciapiede**, cioè una macchina su due
+trampoli. Lo stesso vale per ogni oggetto appoggiato: l'ombra di contatto sotto la gomma è
+tre pixel e senza quei tre pixel la ruota galleggia sempre, per bene che sia disegnata.
+
+E il raccordo fra due forme non è il rettangolo che le contiene. La gomma di sbieco è una
+**capsula** — due ellissi raccordate riga per riga — e raccordarle con un `fillRect` alto
+tutta la ruota mette due quadrati neri al posto delle gomme. Si raccorda per righe.
+
+### 74. Un flag orfano è contabilità; un flag orfano *solo* è una scelta che non fa niente
+
+Sembra una distinzione da niente e cambia tutto il lavoro. In Pandataria c'erano 161 flag
+impostati e mai letti: un elenco così è ingestibile e si finisce per non guardarlo. Ma se si
+divide in due:
+
+- il flag su una scelta che fa **già** altro (porta a una scena nuova, dà un oggetto, cura,
+  tira un dado) è contabilità inutile: si toglie quando si passa da quelle parti, e nessuno
+  se ne accorge. Erano 132;
+- il flag che è l'**unico** effetto di una scelta vuol dire che quella scelta **non fa
+  niente**: il giocatore la premeva, il gioco segnava una crocetta su un foglio che non legge
+  nessuno, e la storia restava dov'era. Erano **29**, ed erano il lavoro vero.
+
+Diciotto dei ventinove erano scelte *finali* — le ultime della partita, quelle su cui il
+giocatore sta più a pensare. Il posto per farle contare c'era già e non richiedeva scene
+nuove: la **CRONACA** dell'epilogo («cosa è rimasto acceso altrove per colpa vostra») e il
+**Quaderno** per le misure. `tools/flag-orfani.mjs` fa la divisione da sé.
+
+### 75. Il motore può promettere un premio che la storia non concede
+
+`js/combat.js` aveva da sempre un effetto scritto e collaudato per `nastro_bruciato` — il
+boss parte con sei punti vita in meno — e **nessuna scena del gioco impostava quel flag**.
+Un premio irraggiungibile non è codice morto innocuo: è una promessa che il motore fa e la
+storia non mantiene, e il giocatore non lo saprà mai. Il controllo che lo trova è lo stesso
+dei flag orfani, guardato dall'altro verso: **letti e mai scritti**. Quel numero deve stare
+a zero, sempre, e non è debito — è un bug.
+
+Corollario più severo: una riga di log **promette**. Se il log dice «il primo colpo passa e
+non fa danno», il codice deve farlo nel punto dove il danno si applica — non nel messaggio.
+Una bugia nel log è la bugia peggiore che questo progetto possa dire, perché il giocatore
+non ha nessun modo di scoprirla.
+
+### 76. Il ripristino dal checkpoint deve riavvolgere anche quello che è stato già scelto
+
+Il checkpoint di Pandataria riportava indietro flag, oggetti, squadra e ricette — ma non
+`usedChoices`, cioè le scelte `once: true` già premute. Effetto: chi muore rigioca il pezzo
+**senza** le scelte che gli avevano dato le cose che ha appena perso, e certi contenuti
+spariscono per sempre senza dirlo. Il caso che l'ha fatto vedere è quasi comico: la scelta
+che toglie sei punti vita al boss veniva cancellata proprio dalla sconfitta che rendeva quei
+sei punti necessari. Due righe (`enteredScenes`, `usedChoices`) nello snapshot e nel
+ripristino; gli altri quattro giochi le avevano già.
+
+E la conseguenza sul collaudo: se il gioco può riavvolgere, uno scenario che esprime
+l'intenzione **una volta sola** (`sequences`, che si consumano in ordine) non la esprime più
+dopo un ritorno. «Questo giocatore, ogni volta che gli capita, lo brucia» si scrive con la
+mappa singola, che vale a ogni visita.
+
+### 77. Una deroga si scrive con la ragione accanto, o diventa un avviso da saltare
+
+Il controllo sul nero pieno segnalava due fondali in cui il nero è **voluto**: il buco nella
+stiva a quarantacinque metri, dove la torcia entra e non torna, e le celle socchiuse del
+panopticon — un vano con niente dietro *è* nero pieno. Segnalati a ogni collaudo, per
+settimane. Un avviso che si sa di dover ignorare è peggio di nessun avviso: si impara a
+saltare la riga, e il giorno che sotto c'è un difetto vero si salta anche quello. Adesso
+c'è una tabella `NERO_VOLUTO` con la ragione scritta per ognuno, in tutti e cinque i giochi
+(vuota dove non serve, così il meccanismo c'è quando servirà).
+
+Della stessa famiglia: **un numero falso in un messaggio di collaudo è peggio di nessun
+numero**, perché lo si cita. `assemble.mjs` contava come scene ogni chiave di primo livello
+e pescava anche gli oggetti di `ITEMS`: stampava «145 scene» dove `CAMPAIGN` ne ha 133. Come
+guardia funzionava — confrontava un numero con lo stesso numero di prima — e infatti nessuno
+se n'era accorto per cinque giochi.
