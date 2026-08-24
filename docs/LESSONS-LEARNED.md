@@ -1720,3 +1720,45 @@ ottenere tre numeri diversi, perché non si conta male: se ne vede una in più, 
 La soglia, dopo, era ancora rossa — 1 ogni 5,5 invece di 1 ogni 4. E l'ho scritta nel messaggio
 di commit invece di aggirarla, perché un numero rosso e vero vale più di un numero verde e
 finto: il primo dice cosa manca, il secondo fa smettere di guardare.
+
+### 84. I difetti grafici vengono in famiglie: trovato uno, cercare i fratelli
+
+Ventotto difetti grafici trovati in una passata su ventuno fondali, e quasi nessuno era solo.
+Sono venuti in **famiglie**, e ogni famiglia si trova con una ricerca sola:
+
+- **Piani orizzontali dipinti come pareti** — quattro volte: la banchina del porto, il ponte
+  del traghetto, il basolato di piazza Castello, il fondo della barca. Su un piano
+  orizzontale i giunti longitudinali convergono e i corsi trasversali si allargano venendo
+  avanti. Cercare: `for (let x = 0; x < W; x += ` seguito da un `fillRect` verticale a passo
+  fisso.
+- **Gradini che finiscono tutti sulla stessa verticale** — due volte, e la prima l'aveva
+  segnalata il committente («tipo delle scale senza senso da sole»). Cercare: `W - gx`.
+- **Scie disegnate a blocchi** — due volte: sedici rettangoli alti dieci pixel messi uno
+  sotto l'altro leggono come una scaletta, non come una scia. Cercare: un ciclo su `i` con
+  `fillRect` di altezza costante e larghezza crescente.
+- **Cose sospese in aria** — le gocce a cento pixel sotto la volta, la cesta fuori dai
+  960×360 dopo la rotazione, il boccaporto senza il suo contorno. Cercare: un `fillRect`
+  dentro un contesto ruotato, o una y calcolata a mano invece che da un profilo.
+- **Oggetti fuori scala** — cinque volte, e la cura giusta due volte su cinque è **togliere**:
+  l'ombrellone del mare, alla distanza corretta, sarebbe alto 496 px in un canvas di 360.
+- **Bande a spigoli netti che dovrebbero sfumare** — due volte, e una tagliava l'orizzonte.
+
+La regola operativa: quando si trova un difetto grafico, **prima di correggerlo si cerca il
+suo fratello**. Costa una `grep` e trova quasi sempre almeno un altro caso, perché un painter
+si scrive copiando il painter di prima.
+
+### 85. Il nome della funzione e quello che disegna erano due cose diverse
+
+`reticolatum()` — con il commento «la rete di losanghe di tufo, è la firma di Villa Giulia» —
+disegnava quadrati allineati agli assi sfalsati di mezzo passo, cioè muratura di mattoni. Zero
+losanghe su zero. `cocciopesto()` — con il commento «liscio come una vasca da bagno, con
+l'unghia non lo scalfisci» — lo disegnava con `blocks()`, cioè una piastrellatura rosa.
+
+Sono i due difetti più gravi della passata, perché una funzione di libreria vale su **tutti**
+i fondali che la chiamano, e nessuno la riguarda più: si guarda il nome, si legge il commento,
+e si crede a entrambi. Il commento era giusto due volte, e nessuna delle due volte descriveva
+il disegno.
+
+Regola: quando si scrive un helper grafico, il primo collaudo è **renderizzarlo da solo e
+guardarlo**, non usarlo dentro una scena dove mille altre cose distraggono. E quando si passa
+da un painter che lo usa, si guarda se quello che si vede è quello che il nome promette.
