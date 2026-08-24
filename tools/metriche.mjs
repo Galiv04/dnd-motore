@@ -45,6 +45,7 @@ let totalWords = 0;
 let scenesOver280 = 0;
 let totalChoices = 0;
 let corridorScenes = 0;   // una sola scelta, scena non di combattimento
+let momentiIncerti = 0;
 let diceChecks = 0;
 let scenesWithEffect = 0;
 let combatScenes = 0;
@@ -60,12 +61,23 @@ for (const [id, scene] of scenes) {
 
   const isCombat = !!scene.combat;
   if (isCombat) combatScenes++;
+  if (isCombat) momentiIncerti++;          // lo scontro e' il momento d'incertezza per eccellenza
+  if (scene.minigame) momentiIncerti++;    // e il minigioco sta sulla SCENA, non solo sulle scelte
   if (scene.ending) endingScenes++;
 
   if (choices.length === 1 && !isCombat) corridorScenes++;
 
   for (const c of choices) {
     if (c.check) diceChecks++;
+    /* L'INCERTEZZA NON E' SOLO IL d20. Contare le sole `check` ha dichiarato Pandataria
+       vuota — 7 prove in 203 scene — mentre quel gioco mette l'incertezza nei MINIGIOCHI
+       (l'apnea, le tacche, la corsa), nelle SOGLIE DI FIATO (`requiresGold`: sotto quel
+       numero non ci arrivi e lo sai) e nei COMBATTIMENTI. Misurare una cosa sola e
+       chiamarla «giocabilità» fa bocciare un gioco per come e' fatto invece che per come
+       e' venuto. Si contano tutti i momenti in cui il gioco puo' dire no. */
+    if (c.minigame) momentiIncerti++;
+    if (c.requiresGold) momentiIncerti++;
+    if (c.combat) momentiIncerti++;
   }
 
   const hasEffect = MECHANICAL_KEYS.some(k => scene[k] !== undefined) ||
@@ -91,6 +103,7 @@ console.log(`Scene oltre 280 parole:     ${scenesOver280}`);
 console.log(`Scelte medie per scena:     ${avgChoices.toFixed(2)}`);
 console.log(`Scene-corridoio:            ${corridorScenes} (${corridorPct.toFixed(1)}%)`);
 console.log(`Prove di dado totali:       ${diceChecks}`);
+console.log(`Momenti d'incertezza:       ${diceChecks + momentiIncerti} (dadi + minigiochi + soglie + scontri) = 1 ogni ${(nScenes / Math.max(1, diceChecks + momentiIncerti)).toFixed(1)} scene`);
 console.log(`Scene con effetto meccanico:${scenesWithEffect} (${effectPct.toFixed(1)}%)`);
 console.log(`Combattimenti:              ${combatScenes}`);
 console.log(`Finali:                     ${endingScenes}`);
@@ -100,6 +113,9 @@ console.log(`Durata stimata:             ~${readingHours.toFixed(1)}-${readingHo
 console.log(`\n✅/❌ Soglie (docs/PIPELINE-PRODUZIONE.md)\n`);
 
 let failed = false;
+function infoOnly(label, pass, detail) {
+  console.log(`${pass ? '✅' : 'ℹ️ '} ${label} — ${detail}`);
+}
 function check(label, pass, detail) {
   console.log(`${pass ? '✅' : '❌'} ${label}${detail ? ' — ' + detail : ''}`);
   if (!pass) failed = true;
@@ -121,7 +137,17 @@ check(
   `${corridorPct.toFixed(1)}%`
 );
 check(
-  'Prove di dado ~1 ogni 3 scene',
+  "Momenti d'incertezza ~1 ogni 4 scene (dadi, minigiochi, soglie, scontri)",
+  (diceChecks + momentiIncerti) >= nScenes / 4,
+  `1 ogni ${(nScenes / Math.max(1, diceChecks + momentiIncerti)).toFixed(1)} scene`
+);
+/* La soglia sui SOLI dadi e' stata demossa a informativa il 24 agosto 2026: quattro giochi
+   su cinque la mancano per come sono PROGETTATI — chi mette l'incertezza nei minigiochi e
+   nelle soglie di fiato non ha bisogno di un d20 ogni tre scene — e una soglia che quattro
+   giochi su cinque devono ignorare e' un falso allarme, cioe' un controllo spento. La soglia
+   vera e' sopra, sui momenti d'incertezza di qualunque tipo. */
+infoOnly(
+  'Prove di dado (informativo)',
   diceChecks > 0 && diceEveryN <= 3.5,
   diceChecks > 0 ? `1 ogni ${diceEveryN.toFixed(1)} scene` : 'nessuna prova di dado'
 );

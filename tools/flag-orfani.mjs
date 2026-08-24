@@ -103,6 +103,13 @@ for (const r of dato('RECIPES') || []) if (r.flag) segna(r.flag, 'ricetta ' + (r
 for (const [f, src] of Object.entries(testo)) {
   for (const m of src.matchAll(/flags\s*\.\s*([A-Za-z_$][\w$]*)\s*(?:=[^=]|\+\+|--|\+=)/g)) segna(m[1], 'js/' + f);
   for (const m of src.matchAll(/flags\s*\[\s*['"]([^'"]+)['"]\s*\]\s*(?:=[^=]|\+\+|--|\+=)/g)) segna(m[1], 'js/' + f);
+  /* E l'INIZIALIZZAZIONE, che non e' un assegnamento e sfuggiva: `flags: solo ? { solo:
+     true } : {}` in newGame(). Il flag `solo` della Corona di Mezzanotte usciva fra i bug —
+     letto dalla CRONACA e scritto da nessuno — e invece era scritto alla riga quattro del
+     motore. Un falso allarme in uno strumento nuovo e' la cosa che lo fa spegnere. */
+  for (const m of src.matchAll(/flags\s*:\s*[^;\n]{0,240}/g)) {
+    for (const k of m[0].matchAll(/([A-Za-z_$][\w$]*)\s*:\s*(?:true|false|0|1)\b/g)) segna(k[1], 'js/' + f + ' (init)');
+  }
 }
 for (const m of dato('MISTERI') || []) if (m.premio?.flag) segna(m.premio.flag, 'premio del mistero ' + (m.id || m.titolo || '?'));
 
