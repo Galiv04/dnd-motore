@@ -1672,3 +1672,51 @@ e non un evento. La prima passata su Effetto Zoom ne aveva messi ottantaquattro,
 quattordici col suono della moneta su scene che davano un punto di **Lucidità** — cioè un
 suono da soldi in un gioco dove quella risorsa è la lucidità. Tematicamente falso, e
 quarantadue di quegli ottantaquattro erano rumore.
+
+### 82. Quando la misura è sbagliata si corregge la misura, non il gioco — ma solo se è sbagliata
+
+Tre volte in un giorno, sullo stesso strumento, `metriche.mjs` ha bocciato un gioco per come
+è **fatto** invece che per come è **venuto**:
+
+1. «Prove di dado ~1 ogni 3 scene» contava solo `check`, e quattro giochi su cinque mettono
+   l'incertezza nei minigiochi, nelle soglie di risorsa e negli scontri. Pandataria risultava
+   vuota con 7 prove in 203 scene, e i momenti in cui quel gioco può dire no erano 35.
+2. `MECHANICAL_KEYS` si fermava a sette chiavi e lasciava fuori il dado: una scena il cui
+   unico effetto è farti tirare una prova di Carisma risultava «senza effetto meccanico», e
+   così finivano nell'elenco tutti i Duelli di Parole della Casa — che sono la meccanica firma
+   di quel gioco — e il corridoio delle undici porte sbagliate.
+3. La banda «150-260 parole per scena» è calibrata sui giochi horror. La Corona di Mezzanotte
+   sta a 130 perché è una fiaba gotica **comica** e la brevità È la battuta: «Conclusione
+   dell'analisi: è diventato buio. Rivoluzionario.» funziona perché finisce lì.
+
+Ma il caso 3 è diverso dagli altri due, e la differenza è tutto il mestiere. Nei primi due la
+misura era **sbagliata**: contava una cosa e la chiamava col nome di tutte. Nel terzo la
+misura era giusta e il gioco era legittimamente fuori banda. Lì non si allarga la soglia in
+silenzio: si dichiara, nel repo del gioco, con la ragione scritta — `docs/METRICHE.json` — e
+la ragione viene stampata insieme al verdetto, ogni volta.
+
+E il controllo che tiene tutto in piedi: **prima di cambiare una soglia bisogna aver letto**.
+La banda della Corona è stata allargata dopo aver letto le venti scene più corte una per una e
+verificato che nessuna è incompiuta. Se non le avessi lette, allargare la banda sarebbe stato
+esattamente quello che sembra.
+
+### 83. La tentazione peggiore è la prova che non può dire no
+
+Pandataria aveva 7 prove di dado in 203 scene, e la soglia chiedeva un momento d'incertezza
+ogni quattro. Il modo rapido per chiuderla era ovvio: prendere venticinque scelte che già
+esistono, trasformarle in `check` con `success` e `fail` che puntano **alla stessa scena**, e
+mettere `failDamage` sul fallimento. Venticinque righe, soglia verde, mezz'ora di lavoro.
+
+Sarebbe stato truccare la misura. Una prova che porta sempre allo stesso posto non è un
+momento in cui il gioco può dire no: è una tassa sui punti vita con un dado davanti. E la
+soglia esiste per contare i momenti in cui il gioco può dire no.
+
+Quello che si fa invece è più lento e più utile: diciassette prove, ognuna con la sua scena di
+sconfitta VERA, dove a costare è il **modo** e non i punti. Aprire un muro e fare rumore — e
+al terzo colpo il quarto torna indietro prima di essere dato. Perdere la torcia, che resta
+accesa in fondo al pozzo, e fare gli ultimi tre metri con le ombre all'insù. Contare in tre e
+ottenere tre numeri diversi, perché non si conta male: se ne vede una in più, a turno.
+
+La soglia, dopo, era ancora rossa — 1 ogni 5,5 invece di 1 ogni 4. E l'ho scritta nel messaggio
+di commit invece di aggirarla, perché un numero rosso e vero vale più di un numero verde e
+finto: il primo dice cosa manca, il secondo fa smettere di guardare.
