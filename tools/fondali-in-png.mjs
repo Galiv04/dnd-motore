@@ -41,6 +41,10 @@ const radice = resolve(arg('gioco', process.cwd()));
 const fuori = resolve(arg('out', '/tmp/fondali'));
 const sfondo = arg('sfondo', null);
 const solo = arg('solo', null);
+/* --notte applica il velo notturno del motore, quello che le scene con `notturno: true`
+   ricevono dopo il painter. Serve perche' cinque scene di Pandataria erano notturne su
+   fondali di pieno giorno, e per correggerle bisogna GUARDARLE di notte, non di giorno. */
+const NOTTE = arg('notte', false) !== false;
 /* La dimensione del canvas, che è quella del gioco. NON si usa per ingrandire: i painter
    mescolano frazioni di W/H e misure in pixel assoluti (una macchina è larga 420 px, non
    0,43 W), quindi rendere su un canvas doppio non raddoppia il disegno — lo rimpicciolisce
@@ -173,6 +177,7 @@ function disegna(nome) {
   if (typeof S.setDepth === 'function') S.setDepth(0);
   else if (typeof S.setEclipse === 'function') S.setEclipse(0);
   S.painters[nome](c, W, H);
+  if (NOTTE && typeof S.notte === 'function') S.notte(c, W, H, nome);
   return tela;
 }
 

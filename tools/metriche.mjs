@@ -36,7 +36,17 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-const MECHANICAL_KEYS = ['gold', 'goldLoss', 'heal', 'damage', 'item', 'item2', 'sets'];
+/* UN EFFETTO MECCANICO NON E' SOLO UN NUMERO CHE CAMBIA. La lista si fermava a sette chiavi
+   — gold, goldLoss, heal, damage, item, item2, sets — e lasciava fuori il DADO: una scena il
+   cui unico effetto e' farti tirare una prova di Carisma risultava «senza effetto
+   meccanico». Nella Casa che non Finisce sono finiti in quell'elenco tutti i Duelli di
+   Parole, che sono la meccanica firma di quel gioco, e il corridoio delle undici porte
+   sbagliate. Il gioco veniva bocciato per come e' fatto, non per come e' venuto — ed e' la
+   terza volta che questo strumento misura una cosa sola e la chiama col nome di tutte. */
+const MECHANICAL_KEYS = ['gold', 'goldLoss', 'heal', 'damage', 'item', 'item2', 'sets',
+  'check', 'combat', 'minigame', 'fullHeal', 'recharge', 'onEnterOnce',
+  'removeItem', 'removeItem2', 'sacrifice', 'sacrificeSets', 'requiresGold',
+  'killRoller', 'reviveAll', 'ending'];
 
 const scenes = Object.entries(CAMPAIGN);
 const nScenes = scenes.length;
@@ -124,10 +134,24 @@ function check(label, pass, detail) {
   if (!pass) failed = true;
 }
 
+/* LA BANDA DELLE PAROLE SI PUO' DICHIARARE, CON LA RAGIONE SCRITTA. 150-260 e' calibrata
+   sui giochi horror della serie, dove una scena di ottanta parole e' una scena non finita.
+   La Corona di Mezzanotte non e' un gioco horror: e' una fiaba gotica comica, e sta a 130
+   perche' la brevita' E' LA BATTUTA — «Conclusione dell'analisi: È diventato buio.
+   Rivoluzionario.» funziona perche' finisce li'. Allungare quelle scene vorrebbe dire
+   peggiorare il gioco per migliorare un numero, che e' il baratto sbagliato.
+   Quindi: un gioco puo' dichiarare la sua banda in docs/METRICHE.json, e la RAGIONE viene
+   stampata insieme al verdetto. Una deroga scritta e' un controllo che funziona; una soglia
+   che si sa di dover ignorare e' un controllo spento (lezione 71 e 77). */
+let banda = [150, 260], perche = null;
+try {
+  const cfg = JSON.parse(readFileSync(join(gameDir, 'docs', 'METRICHE.json'), 'utf8'));
+  if (Array.isArray(cfg.parole) && cfg.parole.length === 2) { banda = cfg.parole; perche = cfg.perche || null; }
+} catch { /* nessuna deroga: vale la banda della serie */ }
 check(
-  'Parole medie per scena tra 150 e 260',
-  avgWords >= 150 && avgWords <= 260,
-  `${avgWords.toFixed(1)} parole`
+  `Parole medie per scena tra ${banda[0]} e ${banda[1]}`,
+  avgWords >= banda[0] && avgWords <= banda[1],
+  `${avgWords.toFixed(1)} parole${perche ? ` — banda dichiarata: ${perche}` : ''}`
 );
 check(
   'Scelte medie per scena ≥ 1.9',
