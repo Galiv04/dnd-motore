@@ -2051,3 +2051,84 @@ Le tre regole che ne escono:
 3. quando un test cade dopo una modifica, la prima cosa da guardare non è l'asserzione: è **il
    percorso**. `TEST_DUMP=1` stampa la lista delle scene visitate, e nove volte su dieci la
    divergenza è venti scene prima del punto in cui il test si lamenta.
+
+### 98. Il personaggio che il gioco descrive e quello che il gioco fa fare
+
+Il brief di Pandataria dice, su Gaetano: *è analitico e curioso, ma quella è metà del
+personaggio — è anche easy-going, molto avventuroso, gli piace FARE, ed è LUI che trascina
+fuori.* Il gioco lo diceva anche nei commenti dei draft. E poi, alla conta:
+
+| | scene |
+|---|---|
+| Gaetano **spiega** | ~35 |
+| Gaetano **trascina** | ~31 |
+
+Il rapporto grezzo sembrava sano. Non era il numero a non tornare: era **la qualità dei
+"trascina"**. Su trentuno iniziative, quasi tutte erano **strumentali** — costruisce
+l'idrofono, apre il muro, scava sotto la pietra, cala il microfono. Tutte al servizio di
+un'indagine. **In 318 scene non ce n'era una in cui proponesse un'escursione o un'immersione
+per il gusto di farla.**
+
+Un uomo che ti trascina fuori solo quando c'è da scoprire qualcosa non è avventuroso: è un
+investigatore. E il giocatore non vede mai il personaggio fare la cosa che gli piace.
+
+Il gioco lo sfiorava tre volte e ogni volta si tirava indietro: il gesto d'amore avventuroso
+più bello (due maschere identiche comprate a marzo per un regalo di settembre) è **fuori
+scena, al passato, dentro uno scontrino**; una riga sola in un altro atto; e nella terza è
+lei a proporre e lui a seguirla.
+
+La cura è **una scena che non frutta niente**: nessun indizio, nessun oggetto, nessun flag di
+mistero. Il suo valore è che non rende. Costa una scena e due scelte, e vale il personaggio.
+
+**Il controllo da fare, e non è "il testo è bello?":** contare le scene in cui un personaggio
+fa la cosa che lo definisce, e guardare se almeno una volta la fa **senza che serva alla
+trama**. Se ogni sua iniziativa deve fruttare, quello non è un carattere: è una funzione.
+
+### 99. Le due contraddizioni che rompono un personaggio, e come si trovano
+
+Su 318 scene, due punti in cui il gioco diceva due cose incompatibili sullo stesso uomo:
+
+1. **Un patto stabilito e poi rigiocato.** Una scena dell'atto B stabilisce, per iscritto e
+   con una cura completa, il patto dei trenta secondi: *«tutto quello che senti me lo dici
+   entro trenta secondi»*. Due giorni dopo, con il flag del patto **ancora attivo** e nessun
+   `requires` che lo veda, una scena dell'atto D rigioca per la **quarta volta** il beat della
+   bugia — «non l'ho registrata» / «Gaetano.» / «l'ho registrata». Le prime tre volte il gioco
+   gliela fa pagare e lui impara; la quarta è un **reset del personaggio**. E cinquecento righe
+   più avanti, nello stesso atto, un'altra scena dice *«e sceglie la verità, perché con lei ha
+   smesso di fare altrimenti»*.
+2. **Due versioni dello stesso passato.** Una scena dice *«se dici basta si torna. Come sempre.
+   Non ho mai fatto altro»*; un'altra, la più tenera del gioco, ricorda *«tutte le volte in cui
+   lei aveva detto non mi va e lui aveva risposto ma dai»*. Non possono essere vere tutte e
+   due, e la contraddizione cadeva esattamente sull'asse su cui il brief è più esigente.
+
+**Come si trovano.** Non rileggendo: **cercando i flag di stato che il testo dovrebbe
+rispettare.** Un patto è un flag; una scena che rigioca il beat che il patto ha chiuso e non
+mette quel flag nei `requires` è, quasi sempre, una contraddizione. La query è meccanica:
+*quali scene raccontano di nuovo una cosa che un flag dice già superata?*
+
+E la cura della seconda: non scegliere fra le due versioni a caso, ma **scegliere quella che
+il brief chiede e riscrivere l'altra** — qui, che lo sbaglio di lui non è averla spinta, ma
+non aver creduto al motivo. *«Non è che non mi hai mai ascoltata. Tu mi hai sempre riportata
+a riva. È che pensavi che passasse. E una cosa che deve passare è una cosa che non ha un
+motivo.»*
+
+### 100. Il numero sbagliato su una persona vera
+
+In un gioco che parla di persone realmente esistite — Giulia figlia di Augusto, i detenuti di
+Santo Stefano, i bambini della Santa Lucia — **i numeri sono la forma del rispetto**, e il
+gioco ne aveva tre versioni diverse della stessa donna in tre scene: trentasette anni con
+cinque figli in una, ventidue anni in un'altra (che è l'età di sua zia), ventidue anni con
+venti di reclusione e un figlio neonato in una terza (che è **un'altra Giulia**, sua figlia,
+che su quell'isola non fu mai relegata).
+
+Nessuno se ne accorge giocando. Ma è lo stesso difetto della coppia che ha due età diverse e
+del protagonista che ha 42 anni il venerdì e 41 la domenica: **un gioco che sbaglia i propri
+numeri sta dicendo al giocatore che non ci teneva davvero.**
+
+E c'è un guadagno che non ti aspetti: **il numero vero è quasi sempre migliore di quello
+sbagliato.** *«Ventidue anni avevo»* diventa *«Trentasette anni avevo, e cinque figli che non
+ho più visto»*, ed è peggio — cioè è meglio.
+
+Il controllo: prendere ogni persona reale nominata dal gioco e **fare una riga sola per
+ognuna con i suoi numeri**, poi cercare quei numeri nel testo. Costa dieci minuti e non si può
+fare a occhio, perché le contraddizioni stanno in atti diversi.
