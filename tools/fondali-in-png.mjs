@@ -28,7 +28,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlink
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import vm from 'vm';
-import { Tela, scriviPng } from './tela.mjs';
+import { Tela, scriviPng, colorìSballati } from './tela.mjs';
 
 const arg = (nome, def = null) => {
   const i = process.argv.indexOf('--' + nome);
@@ -234,6 +234,22 @@ if (sporchi.length) {
   }
 } else {
   console.log('  nessuna macchia scoperta');
+}
+/* I COLORI SBALLATI — `rgb(NaN,NaN,NaN)`, `rgba(...,NaN)`, `undefined`. Li contava
+   già tela.mjs e non li leggeva nessuno, e sono la classe di difetto più insidiosa
+   che ci sia: IL BROWSER IGNORA l'assegnazione e tiene il colore di prima, quindi in
+   partita quel pezzo viene disegnato del colore SBAGLIATO senza un errore in console;
+   il rasterizzatore invece lo rende NERO. Cioè il PNG e la partita mostrano due cose
+   diverse, e nessuna delle due è quella voluta — ed è per questo che il difetto è
+   sopravvissuto a una passata intera di verifica visiva sui PNG.
+   La causa, tutte e due le volte che l'ho trovato: un ciclo che parte da un valore
+   ARROTONDATO mentre il parametro si misura da quello non arrotondato, così la prima
+   iterazione dà un `t` di poco NEGATIVO — e Math.pow(negativo, 1.6) è NaN.
+   Si cura con Math.max(0, t). */
+if (colorìSballati.n) {
+  console.log(`\n  ✗ ${colorìSballati.n} assegnazioni di colore NON VALIDE (il browser le ignora, il rasterizzatore le rende nere):`);
+  for (const e of colorìSballati.esempi) console.log(`     ${e}`);
+  console.log('     causa tipica: Math.pow(t, k) con t di poco negativo — un ciclo che parte da Math.round(x) e misura t da x');
 }
 const neri = fatti.filter(f => f.nero > 500).sort((a, b) => b.nero - a.nero);
 if (neri.length) {

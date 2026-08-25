@@ -1988,3 +1988,66 @@ La cura non è «aggiungere rumore»: è dare al gruppo la storia che ha. Le tac
 all'altezza della mano da seduti, vanno fino alla porta, poi scendono, poi quando sotto è
 pieno salgono, e le ultime sono corte e più leggere perché contare stanca. I bagagli si
 impilano per epoca. I funghi rimpiccioliscono andando in fondo.
+
+### 96. Il difetto che il PNG e il browser mostrano diversi, e nessuno dei due ha ragione
+
+Dopo una passata intera di verifica visiva sui PNG — ventidue fondali guardati uno per uno,
+tutti a posto — ho aperto il gioco nel browser e ho trovato **sessantasei assegnazioni di
+colore non valide**: `rgb(NaN,NaN,NaN)` e `rgba(4,10,14,NaN)`.
+
+È la classe di difetto più insidiosa che esista in questo progetto, perché **le due
+verifiche mostrano due cose diverse e nessuna delle due è quella voluta**:
+
+- il **browser** ignora l'assegnazione di un colore non valido e tiene quello di prima: in
+  partita quel pezzo viene disegnato del **colore sbagliato**, senza un errore in console;
+- il **rasterizzatore** lo rende **nero**.
+
+Quindi sul PNG vedi un pezzo nero e pensi «è un'ombra», e in partita vedi un pezzo del colore
+della cosa disegnata prima e pensi «è così». Il difetto sopravvive a entrambe le verifiche.
+
+**La causa, tutte e due le volte:** un ciclo che parte da un valore **arrotondato** mentre il
+parametro si misura da quello **non arrotondato**.
+
+```js
+for (let x = Math.round(W * 0.62); x < W; x++) {
+  const t = (x - W * 0.62) / (W * 0.38);      // W*0.62 = 595,2 → alla prima x=595, t = −0,00055
+  ctx.fillStyle = `rgba(4,10,14,${Math.pow(t, 1.6)})`;   // Math.pow(negativo, 1.6) = NaN
+}
+```
+
+Un `t` negativo di mezzo millesimo, e una potenza **frazionaria** di un numero negativo è NaN.
+Con esponente intero non succederebbe niente: è la combinazione di `Math.round` sul contatore
+e di un esponente non intero a farlo. Si cura con `Math.max(0, t)`.
+
+**Come si trova.** `tela.mjs` contava già questi colori in `colorìSballati` — e nessuno
+strumento li stampava. Adesso `fondali-in-png.mjs` li riporta. E nel browser si trovano in
+dieci righe, sostituendo il setter di `fillStyle` su un canvas di prova e chiamando tutti i
+painter: è un controllo che vale la pena rifare a ogni passata grafica, perché è l'unico modo
+di vedere una cosa che il PNG non mostra.
+
+### 97. Il banco di prova che verifica una cosa non deve poter fallire per un'altra
+
+Aggiungendo ventisette prove di dado a un gioco, tre scenari del banco di prova sono caduti —
+e nessuno dei tre per il motivo che diceva:
+
+- «il mistero della bambina non ha tutti gli indizi» → in realtà la partita **perdeva
+  l'ultimo scontro**, finiva in `e_abbandono`, e lì i flag del giorno sono già riavvolti dal
+  loop. Il mistero era completo: era la partita a non arrivarci.
+- «nessuna delle due scene di sconfitta dei minigiochi è stata raggiunta» → in realtà una
+  chiave di steering a monte portava la partita su un ramo che **salta l'orto dei Coraggio**,
+  quindi il flag `muro_aperto`, quindi la cisterna murata, quindi il suo minigioco. Una chiave
+  di steering sbagliata non fa fallire la scena che nomina: **fa fallire quella dopo.**
+- «mancano d11_signora_no» → la chiave `d11_vuoto: 'Al tavolino in fondo alla piazza'` non ha
+  **mai** potuto attaccare, perché quella scelta sta in `d11_registro`. Finché il caso ci
+  portava comunque al registro, il test passava lo stesso: una chiave morta che copre se
+  stessa finché i dadi sono gentili.
+
+Le tre regole che ne escono:
+
+1. uno scenario che verifica **un finale** o **un mistero** deve forzare le prove lungo la
+   strada (`checkOutcomes`), perché altrimenti verifica i dadi;
+2. i rami di fallimento si provano negli scenari **sfortunati**, che li fanno cadere tutti di
+   proposito — non lasciando che capitino;
+3. quando un test cade dopo una modifica, la prima cosa da guardare non è l'asserzione: è **il
+   percorso**. `TEST_DUMP=1` stampa la lista delle scene visitate, e nove volte su dieci la
+   divergenza è venti scene prima del punto in cui il test si lamenta.
