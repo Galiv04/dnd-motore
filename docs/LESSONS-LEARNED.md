@@ -2132,3 +2132,51 @@ ho più visto»*, ed è peggio — cioè è meglio.
 Il controllo: prendere ogni persona reale nominata dal gioco e **fare una riga sola per
 ognuna con i suoi numeri**, poi cercare quei numeri nel testo. Costa dieci minuti e non si può
 fare a occhio, perché le contraddizioni stanno in atti diversi.
+
+### 101. Il difetto che vive nello spazio fra i due controlli
+
+In tutti e cinque i giochi, **in ogni singolo combattimento**, i nemici galleggiavano in
+cielo. Gli eroi sono ancorati al bordo basso della tela, i nemici a quello alto:
+
+```js
+// eroi
+const y = H - 20 - hSize - row * (hSize + 14) + bob;     // il FONDO
+// nemici
+const y = 60 + Math.floor(i / 3) * (eSize + 30) + …      // la CIMA
+```
+
+Su una tela di 360 px un nemico a scala 5 occupa y da 60 a 140, cioè il cielo di quasi tutti
+i fondali. È la stessa riga in cinque repo, perché il motore si copia da un gioco all'altro.
+
+**Ed è sopravvissuto a mesi di verifiche perché sta esattamente nello spazio fra le due che
+facciamo:**
+
+- il **banco di prova headless** non guarda i pixel. Controlla il grafo, i dati, i flag, gli
+  esiti, i finali. Uno sprite in cielo non fa fallire nessuna asserzione;
+- i **fondali si guardano senza gli sprite sopra**. `fondali-in-png.mjs` renderizza i
+  painter, non la scena di gioco: ventidue PNG controllati uno per uno, tutti a posto, e
+  nessuno di quei ventidue conteneva un nemico.
+
+Nessuno dei due controlli è sbagliato. È che fra i due c'è una fessura, e il difetto ci
+stava dentro comodo.
+
+**Cosa se ne impara, oltre alla riga da correggere:** una volta per gioco bisogna
+**GIOCARE**, nel browser, guardando lo schermo. Non un giro di prova simulato: aprire il
+gioco, cominciare una partita, arrivare a un combattimento e guardarlo. Costa venti minuti e
+trova la classe di difetti che nessuno strumento vede — quelli che nascono dalla
+COMPOSIZIONE fra pezzi che funzionano tutti.
+
+Nella stessa mezz'ora di partita vera sono venuti fuori anche: sessantasei colori `NaN` (che
+il PNG mostra neri e il browser ignora, lezione 96), un oggetto nel portellone che dopo due
+tentativi non si riconosceva ancora, e la conferma che il minigioco del calcolo, i
+checkpoint e l'attenzione del Coro a 6/6 fanno esattamente quello che promettono.
+
+**E un avvertimento su come si guarda.** Per chiudere un modale avevo scritto
+`document.querySelectorAll('[id^=modal]')` — che prende anche `modal-generic-CONTENT`, cioè
+il box dentro il modale. Gli ho messo `hidden` e per dieci minuti ho creduto di aver trovato
+un bug del gioco: lo schermo oscurato da un fondale senza contenuto e senza via d'uscita.
+Era mio. **Quando si ispeziona una pagina scrivendoci dentro, si sta anche cambiando
+l'oggetto dell'esame**: prima di dire «è un bug», rileggere cosa si è toccato.
+
+E `offsetParent` non è un test di visibilità: è `null` per tutto quello che sta in
+`position: fixed`, cioè per ogni overlay. Si usa `getClientRects().length > 0`.
